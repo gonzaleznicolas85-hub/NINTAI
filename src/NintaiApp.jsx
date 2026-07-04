@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
 import {
   LayoutGrid, ShoppingCart, Package, Wallet, FileText, Receipt, Settings,
-  Plus, Trash2, Search, X, Copy, Check, Circle, Pencil, Upload, Save, Paperclip,
+  Plus, Trash2, Search, X, Copy, Check, Circle, Pencil, Upload, Save, Paperclip, Menu,
 } from "lucide-react";
 
 /* ---------------------------------------------------------------------
@@ -131,7 +131,25 @@ function useApi(apiUrl) {
     });
     return res.json();
   }
-  return { active, list, create, update, remove };
+  async function bulkCreate(sheet, dataArr) {
+    if (!active || !dataArr?.length) return null;
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ sheet, action: "bulk_create", data: dataArr }),
+    });
+    return res.json();
+  }
+  async function uploadFile(filename, dataUrl) {
+    if (!active) return { url: dataUrl };
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action: "upload_file", filename, dataUrl }),
+    });
+    return res.json();
+  }
+  return { active, list, create, update, remove, bulkCreate, uploadFile };
 }
 
 /* ------------------------- componentes chicos reutilizables ------------------------- */
@@ -230,6 +248,18 @@ const btnGhost = {
   display: "inline-flex", alignItems: "center", gap: 6,
 };
 
+/* ------------------------- responsive ------------------------- */
+
+function useIsMobile(breakpoint = 860) {
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < breakpoint : false));
+  useEffect(() => {
+    function onResize() { setIsMobile(window.innerWidth < breakpoint); }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 /* ------------------------- App ------------------------- */
 
 const NAV = [
@@ -244,6 +274,8 @@ const NAV = [
 
 export default function NintaiApp() {
   const [tab, setTab] = useState("dashboard");
+  const isMobile = useIsMobile(860);
+  const [navOpen, setNavOpen] = useState(false);
   // URL de tu Apps Script (Google Sheets como backend). Podés cambiarla también
   // desde la pestaña Configuración sin tocar el código.
   const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzyrx2soG7C39-9A_3_Klsy5UE4-bli7a-YGGzemryow4VvSUjnmBtNDXbRs-swYsUK/exec";
@@ -260,55 +292,80 @@ export default function NintaiApp() {
   const [canales, setCanales] = useState(SEED_CANALES);
   const [costosFijos, setCostosFijos] = useState(SEED_COSTOS_FIJOS);
 
+  function irA(id) {
+    setTab(id);
+    setNavOpen(false);
+  }
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: T.paper, fontFamily: "'Inter', system-ui, sans-serif", color: T.ink }}>
+    <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", minHeight: "100vh", background: T.paper, fontFamily: "'Inter', system-ui, sans-serif", color: T.ink }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
         * { box-sizing: border-box; }
         table { border-collapse: collapse; width: 100%; font-size: 13px; }
-        th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; color: ${T.inkSoft}; font-weight: 700; padding: 8px 10px; border-bottom: 1.5px solid ${T.ink}; }
+        th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; color: ${T.inkSoft}; font-weight: 700; padding: 8px 10px; border-bottom: 1.5px solid ${T.ink}; white-space: nowrap; }
         td { padding: 9px 10px; border-bottom: 1px solid ${T.line}; vertical-align: middle; }
         tr:hover td { background: ${T.paperDim}40; }
         ::placeholder{ color: #9a9484; }
+        input, select, textarea, button { font-size: 16px; }
+        @media (max-width: 860px) {
+          input, select, textarea, button { font-size: 14px; }
+        }
       `}</style>
 
-      {/* Sidebar */}
-      <div style={{ width: 210, background: T.ink, color: T.paper, padding: "22px 14px", display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px 20px" }}>
-          <div style={{ width: 34, height: 34, borderRadius: "50%", border: `1.5px solid ${T.gold}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Fraunces', serif", color: T.gold, fontSize: 17 }}>忍</div>
-          <div>
-            <div style={{ fontFamily: "'Fraunces', serif", fontSize: 17, lineHeight: 1 }}>Nintai</div>
-            <div style={{ fontSize: 9.5, opacity: 0.6, letterSpacing: 1, textTransform: "uppercase" }}>Design House</div>
+      {/* Barra de navegación: lateral fija en desktop, superior colapsable en mobile */}
+      <div style={{
+        width: isMobile ? "100%" : 210, background: T.ink, color: T.paper,
+        padding: isMobile ? "14px 16px" : "22px 14px", display: "flex", flexDirection: "column", gap: 4,
+        flexShrink: 0, position: isMobile ? "sticky" : "static", top: 0, zIndex: 20,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: isMobile ? 0 : "0 8px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", border: `1.5px solid ${T.gold}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Fraunces', serif", color: T.gold, fontSize: 17, flexShrink: 0 }}>忍</div>
+            <div>
+              <div style={{ fontFamily: "'Fraunces', serif", fontSize: 17, lineHeight: 1 }}>Nintai</div>
+              <div style={{ fontSize: 9.5, opacity: 0.6, letterSpacing: 1, textTransform: "uppercase" }}>Design House</div>
+            </div>
           </div>
-        </div>
-        {NAV.map((n) => {
-          const Icon = n.icon;
-          const active = tab === n.id;
-          return (
-            <button key={n.id} onClick={() => setTab(n.id)}
-              style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 7,
-                background: active ? T.paper : "transparent", color: active ? T.ink : T.paper,
-                border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left", opacity: active ? 1 : 0.82,
-              }}>
-              <Icon size={16} /> {n.label}
+          {isMobile && (
+            <button onClick={() => setNavOpen((v) => !v)} style={{ background: "transparent", border: `1px solid ${T.paper}55`, color: T.paper, borderRadius: 7, padding: 8, cursor: "pointer", display: "flex" }}>
+              {navOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
-          );
-        })}
-        <div style={{ marginTop: "auto", fontSize: 10.5, opacity: 0.5, padding: "10px 8px" }}>
-          {apiUrl ? "● Conectado a Google Sheets" : "○ Modo demo (datos locales)"}
+          )}
         </div>
+
+        {(!isMobile || navOpen) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: isMobile ? 12 : 0 }}>
+            {NAV.map((n) => {
+              const Icon = n.icon;
+              const active = tab === n.id;
+              return (
+                <button key={n.id} onClick={() => irA(n.id)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "10px 10px", borderRadius: 7,
+                    background: active ? T.paper : "transparent", color: active ? T.ink : T.paper,
+                    border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left", opacity: active ? 1 : 0.82,
+                  }}>
+                  <Icon size={16} /> {n.label}
+                </button>
+              );
+            })}
+            <div style={{ fontSize: 10.5, opacity: 0.5, padding: "10px 8px", marginTop: isMobile ? 0 : "auto" }}>
+              {apiUrl ? "● Conectado a Google Sheets" : "○ Modo demo (datos locales)"}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Contenido */}
-      <div style={{ flex: 1, padding: "26px 32px", overflow: "auto" }}>
-        {tab === "dashboard" && <Dashboard ventas={ventas} productos={productos} gastos={gastos} />}
-        {tab === "ventas" && <Ventas ventas={ventas} setVentas={setVentas} productos={productos} canales={canales} api={api} />}
-        {tab === "productos" && <Productos productos={productos} setProductos={setProductos} costosFijos={costosFijos} api={api} />}
-        {tab === "finanzas" && <Finanzas gastos={gastos} setGastos={setGastos} recurrentes={recurrentes} setRecurrentes={setRecurrentes} ventas={ventas} setVentas={setVentas} api={api} />}
-        {tab === "presupuestos" && <Presupuestos presupuestos={presupuestos} setPresupuestos={setPresupuestos} productos={productos} api={api} />}
-        {tab === "facturacion" && <Facturacion facturas={facturas} setFacturas={setFacturas} ventas={ventas} api={api} />}
-        {tab === "config" && <Config apiUrl={apiUrl} setApiUrl={setApiUrl} canales={canales} setCanales={setCanales} costosFijos={costosFijos} setCostosFijos={setCostosFijos} insumos={insumos} setInsumos={setInsumos} api={api} />}
+      <div style={{ flex: 1, padding: isMobile ? "18px 14px" : "26px 32px", overflow: "auto", minWidth: 0 }}>
+        {tab === "dashboard" && <Dashboard ventas={ventas} productos={productos} gastos={gastos} isMobile={isMobile} />}
+        {tab === "ventas" && <Ventas ventas={ventas} setVentas={setVentas} productos={productos} canales={canales} api={api} isMobile={isMobile} />}
+        {tab === "productos" && <Productos productos={productos} setProductos={setProductos} costosFijos={costosFijos} api={api} isMobile={isMobile} />}
+        {tab === "finanzas" && <Finanzas gastos={gastos} setGastos={setGastos} recurrentes={recurrentes} setRecurrentes={setRecurrentes} ventas={ventas} setVentas={setVentas} api={api} isMobile={isMobile} />}
+        {tab === "presupuestos" && <Presupuestos presupuestos={presupuestos} setPresupuestos={setPresupuestos} productos={productos} api={api} isMobile={isMobile} />}
+        {tab === "facturacion" && <Facturacion facturas={facturas} setFacturas={setFacturas} ventas={ventas} api={api} isMobile={isMobile} />}
+        {tab === "config" && <Config apiUrl={apiUrl} canales={canales} setCanales={setCanales} costosFijos={costosFijos} setCostosFijos={setCostosFijos} insumos={insumos} setInsumos={setInsumos} productos={productos} ventas={ventas} api={api} isMobile={isMobile} />}
       </div>
     </div>
   );
@@ -316,7 +373,7 @@ export default function NintaiApp() {
 
 /* ------------------------- Dashboard ------------------------- */
 
-function Dashboard({ ventas, productos, gastos }) {
+function Dashboard({ ventas, productos, gastos, isMobile }) {
   const finalizadas = ventas.filter((v) => ESTADOS_COMPLETOS.includes(v.estado));
   const totalVentas = finalizadas.reduce((a, v) => a + v.total, 0);
   const totalGastos = gastos.reduce((a, g) => a + Number(g.monto || 0), 0);
@@ -367,7 +424,7 @@ function Dashboard({ ventas, productos, gastos }) {
         <KPI label="Ticket promedio" value={money(ticketProm)} sub="Por pedido finalizado" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.4fr 1fr", gap: 16, marginBottom: 16 }}>
         <Card style={{ padding: 18 }}>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Ventas por mes</div>
           <ResponsiveContainer width="100%" height={220}>
@@ -419,7 +476,7 @@ const BLANK_VENTA_FORM = {
   comprobanteNombre: "", comprobanteUrl: "",
 };
 
-function Ventas({ ventas, setVentas, productos, canales, api }) {
+function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...BLANK_VENTA_FORM, canal: canales[0]?.canal || "" });
@@ -442,11 +499,26 @@ function Ventas({ ventas, setVentas, productos, canales, api }) {
     setShowForm(true);
   }
 
+  const [subiendoArchivo, setSubiendoArchivo] = useState(false);
+
   function onFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setForm((f) => ({ ...f, comprobanteNombre: file.name, comprobanteUrl: reader.result }));
+    reader.onload = async () => {
+      const dataUrl = reader.result;
+      if (api.active) {
+        setSubiendoArchivo(true);
+        try {
+          const res = await api.uploadFile(file.name, dataUrl);
+          setForm((f) => ({ ...f, comprobanteNombre: file.name, comprobanteUrl: res.url || "" }));
+        } finally {
+          setSubiendoArchivo(false);
+        }
+      } else {
+        setForm((f) => ({ ...f, comprobanteNombre: file.name, comprobanteUrl: dataUrl }));
+      }
+    };
     reader.readAsDataURL(file);
   }
 
@@ -462,11 +534,11 @@ function Ventas({ ventas, setVentas, productos, canales, api }) {
     if (editingId) {
       const actualizada = { ...base, id: editingId };
       setVentas((list) => list.map((x) => (x.id === editingId ? actualizada : x)));
-      if (api.active) await api.update("Ventas", editingId, { ...actualizada, comprobanteUrl: undefined });
+      if (api.active) await api.update("Ventas", editingId, actualizada);
     } else {
       const nueva = { ...base, id: uid() };
       setVentas((v) => [nueva, ...v]);
-      if (api.active) await api.create("Ventas", { ...nueva, comprobanteUrl: undefined });
+      if (api.active) await api.create("Ventas", nueva);
     }
     setShowForm(false);
     setEditingId(null);
@@ -496,7 +568,7 @@ function Ventas({ ventas, setVentas, productos, canales, api }) {
       {showForm && (
         <Card style={{ padding: 18, marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>{editingId ? "Editar venta" : "Nueva venta"}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12 }}>
             <Field label="Fecha"><input type="date" style={inputStyle} value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} /></Field>
             <Field label="Cliente"><input style={inputStyle} value={form.cliente} onChange={(e) => setForm({ ...form, cliente: e.target.value })} placeholder="Nombre del cliente" /></Field>
             <Field label="Producto">
@@ -536,9 +608,9 @@ function Ventas({ ventas, setVentas, productos, canales, api }) {
               </select>
             </Field>
             <Field label="Comprobante de pago">
-              <label style={{ ...btnGhost, justifyContent: "center", cursor: "pointer" }}>
-                <Upload size={14} /> {form.comprobanteNombre ? form.comprobanteNombre : "Subir archivo"}
-                <input type="file" accept="image/*,application/pdf" onChange={onFile} style={{ display: "none" }} />
+              <label style={{ ...btnGhost, justifyContent: "center", cursor: subiendoArchivo ? "wait" : "pointer", opacity: subiendoArchivo ? 0.6 : 1 }}>
+                <Upload size={14} /> {subiendoArchivo ? "Subiendo..." : (form.comprobanteNombre ? form.comprobanteNombre : "Subir archivo")}
+                <input type="file" accept="image/*,application/pdf" onChange={onFile} disabled={subiendoArchivo} style={{ display: "none" }} />
               </label>
             </Field>
           </div>
@@ -592,7 +664,7 @@ function Ventas({ ventas, setVentas, productos, canales, api }) {
 
 /* ------------------------- Productos ------------------------- */
 
-function Productos({ productos, setProductos, costosFijos, api }) {
+function Productos({ productos, setProductos, costosFijos, api, isMobile }) {
   const [showForm, setShowForm] = useState(false);
   const costoHora = costosFijos.costoEquipo / costosFijos.vidaUtilHs + (costosFijos.consumoW / 1000) * costosFijos.precioKwh;
   const [form, setForm] = useState({ categoria: "Lámpara", nombre: "", variante: "", pesoGramos: 0, costoGramoFilamento: 20, horasImpresion: 0, manoObra: 0, insumos: 0, packaging: 1203, margen: 0.5 });
@@ -621,7 +693,7 @@ function Productos({ productos, setProductos, costosFijos, api }) {
       {showForm && (
         <Card style={{ padding: 18, marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 10 }}>Costo por hora de impresión calculado ({money(costoHora)}) según amortización de equipo + consumo eléctrico en Configuración.</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(4, 1fr)", gap: 12 }}>
             <Field label="Categoría"><input style={inputStyle} value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} /></Field>
             <Field label="Nombre"><input style={inputStyle} value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Hikari" /></Field>
             <Field label="Variante"><input style={inputStyle} value={form.variante} onChange={(e) => setForm({ ...form, variante: e.target.value })} placeholder="Ej: Única" /></Field>
@@ -766,7 +838,7 @@ function IngresoRow({ v, onChange }) {
   );
 }
 
-function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setVentas, api }) {
+function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setVentas, api, isMobile }) {
   const [subtab, setSubtab] = useState("gastos");
   const [gForm, setGForm] = useState({ fecha: new Date().toISOString().slice(0, 10), categoria: "Insumos", descripcion: "", monto: "", tipo: "Variable" });
   const [rForm, setRForm] = useState({ concepto: "", monto: "", frecuencia: "Mensual", proximoPago: new Date().toISOString().slice(0, 10), categoria: "Servicio" });
@@ -833,7 +905,7 @@ function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setV
       {subtab === "gastos" && (
         <>
           <Card style={{ padding: 16, marginBottom: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 2fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
               <Field label="Fecha"><input type="date" style={inputStyle} value={gForm.fecha} onChange={(e) => setGForm({ ...gForm, fecha: e.target.value })} /></Field>
               <Field label="Categoría">
                 <select style={inputStyle} value={gForm.categoria} onChange={(e) => setGForm({ ...gForm, categoria: e.target.value })}>
@@ -848,7 +920,7 @@ function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setV
               <button style={btnPrimary} onClick={addGasto}><Plus size={15} /> Agregar</button>
             </div>
           </Card>
-          <Card style={{ overflow: "hidden" }}>
+          <Card style={{ overflow: "auto" }}>
             <div style={{ fontSize: 11.5, color: T.inkSoft, padding: "10px 14px 0" }}>Hacé clic en cualquier celda para editarla.</div>
             <table>
               <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Tipo</th><th>Monto</th><th></th></tr></thead>
@@ -863,7 +935,7 @@ function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setV
 
           <div style={{ marginTop: 26, marginBottom: 10, fontWeight: 700, fontFamily: "'Fraunces', serif", fontSize: 16 }}>Gastos y pagos recurrentes</div>
           <Card style={{ padding: 16, marginBottom: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
               <Field label="Concepto"><input style={inputStyle} value={rForm.concepto} onChange={(e) => setRForm({ ...rForm, concepto: e.target.value })} placeholder="Ej: Alquiler taller" /></Field>
               <Field label="Monto"><input type="number" style={inputStyle} value={rForm.monto} onChange={(e) => setRForm({ ...rForm, monto: e.target.value })} /></Field>
               <Field label="Frecuencia">
@@ -873,7 +945,7 @@ function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setV
               <button style={btnPrimary} onClick={addRecurrente}><Plus size={15} /> Agregar</button>
             </div>
           </Card>
-          <Card style={{ overflow: "hidden" }}>
+          <Card style={{ overflow: "auto" }}>
             <table>
               <thead><tr><th>Concepto</th><th>Frecuencia</th><th>Próximo pago</th><th>Monto</th><th></th></tr></thead>
               <tbody>
@@ -907,12 +979,50 @@ function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setV
 
 /* ------------------------- Presupuestos ------------------------- */
 
-function Presupuestos({ presupuestos, setPresupuestos, productos, api }) {
+function textoWhatsapp(p, itemsArr) {
+  const lines = itemsArr.map((it) => `• ${it.cantidad}x ${it.nombre} — ${money(it.precioUnitario)}`);
+  return `Presupuesto Nintai — ${p.cliente}\n${lines.join("\n")}\n\nTotal: ${money(p.total)}\n¡Gracias por elegirnos! 忍`;
+}
+
+function copiarAlPortapapeles(texto, onDone) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(texto).then(() => onDone(true)).catch(() => onDone(fallbackCopy_(texto)));
+  } else {
+    onDone(fallbackCopy_(texto));
+  }
+}
+
+function fallbackCopy_(texto) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = texto;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+function linkWhatsapp(telefono, texto) {
+  const digits = (telefono || "").replace(/\D/g, "");
+  const encoded = encodeURIComponent(texto);
+  return digits ? `https://wa.me/${digits}?text=${encoded}` : `https://api.whatsapp.com/send?text=${encoded}`;
+}
+
+function Presupuestos({ presupuestos, setPresupuestos, productos, api, isMobile }) {
   const [cliente, setCliente] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [items, setItems] = useState([]);
   const [sel, setSel] = useState(productos[0]?.id || "");
   const [cant, setCant] = useState(1);
-  const [copiedId, setCopiedId] = useState(null);
+  const [verId, setVerId] = useState(null);
+  const [copiado, setCopiado] = useState(false);
 
   function addItem() {
     const p = productos.find((p) => p.id === sel);
@@ -924,35 +1034,32 @@ function Presupuestos({ presupuestos, setPresupuestos, productos, api }) {
 
   async function guardar() {
     if (!cliente || items.length === 0) return;
-    const nuevo = { id: uid(), fecha: new Date().toISOString().slice(0, 10), cliente, items: JSON.stringify(items), total, validoHasta: "", estado: "Enviado", notas: "" };
+    const nuevo = { id: uid(), fecha: new Date().toISOString().slice(0, 10), cliente, telefono, items: JSON.stringify(items), total, validoHasta: "", estado: "Enviado", notas: "" };
     setPresupuestos((p) => [nuevo, ...p]);
     if (api.active) await api.create("Presupuestos", nuevo);
-    setCliente(""); setItems([]);
+    setCliente(""); setTelefono(""); setItems([]);
+    setVerId(nuevo.id); // muestra el mensaje recién armado
   }
 
-  function textoWhatsapp(p, itemsArr) {
-    const lines = itemsArr.map((it) => `• ${it.cantidad}x ${it.nombre} — ${money(it.precioUnitario)}`);
-    return `Presupuesto Nintai — ${p.cliente}\n${lines.join("\n")}\n\nTotal: ${money(p.total)}\n¡Gracias por elegirnos! 忍`;
+  function copiar(texto) {
+    copiarAlPortapapeles(texto, (ok) => { setCopiado(ok); setTimeout(() => setCopiado(false), 1500); });
   }
 
-  function copiar(p) {
-    const arr = JSON.parse(p.items);
-    navigator.clipboard?.writeText(textoWhatsapp(p, arr));
-    setCopiedId(p.id);
-    setTimeout(() => setCopiedId(null), 1500);
-  }
+  const previewPresupuesto = presupuestos.find((p) => p.id === verId);
+  const previewTexto = previewPresupuesto ? textoWhatsapp(previewPresupuesto, JSON.parse(previewPresupuesto.items)) : null;
 
   return (
     <div>
       <Header title="Presupuestos" subtitle="Armado y envío en segundos." />
 
       <Card style={{ padding: 18, margin: "18px 0" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
           <Field label="Cliente"><input style={inputStyle} value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nombre del cliente" /></Field>
+          <Field label="Teléfono (WhatsApp, opcional)"><input style={inputStyle} value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 2235551234" /></Field>
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "end", marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "end", marginBottom: 14, flexWrap: "wrap" }}>
           <Field label="Producto">
-            <select style={{ ...inputStyle, minWidth: 260 }} value={sel} onChange={(e) => setSel(e.target.value)}>
+            <select style={{ ...inputStyle, minWidth: isMobile ? 180 : 260, maxWidth: "100%" }} value={sel} onChange={(e) => setSel(e.target.value)}>
               {productos.map((p) => <option key={p.id} value={p.id}>{p.categoria} {p.nombre} {p.variante} — {money(p.precioVenta)}</option>)}
             </select>
           </Field>
@@ -979,7 +1086,25 @@ function Presupuestos({ presupuestos, setPresupuestos, productos, api }) {
         <button style={btnPrimary} onClick={guardar} disabled={!cliente || !items.length}>Generar presupuesto</button>
       </Card>
 
-      <Card style={{ overflow: "hidden" }}>
+      {previewPresupuesto && (
+        <Card style={{ padding: 18, marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>Mensaje para {previewPresupuesto.cliente}</div>
+            <X size={15} style={{ cursor: "pointer", color: T.inkSoft }} onClick={() => setVerId(null)} />
+          </div>
+          <textarea readOnly value={previewTexto} style={{ ...textareaStyle, minHeight: 130, width: "100%" }} onFocus={(e) => e.target.select()} />
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <button style={btnGhost} onClick={() => copiar(previewTexto)}>
+              {copiado ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar texto</>}
+            </button>
+            <a style={{ ...btnPrimary, textDecoration: "none" }} href={linkWhatsapp(previewPresupuesto.telefono, previewTexto)} target="_blank" rel="noreferrer">
+              Enviar por WhatsApp
+            </a>
+          </div>
+        </Card>
+      )}
+
+      <Card style={{ overflow: "auto" }}>
         <table>
           <thead><tr><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th><th></th></tr></thead>
           <tbody>
@@ -990,8 +1115,8 @@ function Presupuestos({ presupuestos, setPresupuestos, productos, api }) {
                 <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(p.total)}</td>
                 <td><Hanko estado={p.estado} /></td>
                 <td>
-                  <button style={btnGhost} onClick={() => copiar(p)}>
-                    {copiedId === p.id ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar texto</>}
+                  <button style={btnGhost} onClick={() => setVerId(p.id)}>
+                    <FileText size={13} /> Ver mensaje
                   </button>
                 </td>
               </tr>
@@ -1005,7 +1130,7 @@ function Presupuestos({ presupuestos, setPresupuestos, productos, api }) {
 
 /* ------------------------- Facturación ------------------------- */
 
-function Facturacion({ facturas, setFacturas, ventas, api }) {
+function Facturacion({ facturas, setFacturas, ventas, api, isMobile }) {
   const [ventaId, setVentaId] = useState("");
   const [cuit, setCuit] = useState("");
   const [tipo, setTipo] = useState("Factura C");
@@ -1028,7 +1153,7 @@ function Facturacion({ facturas, setFacturas, ventas, api }) {
       <Header title="Facturación" subtitle="Generá el comprobante a partir de una venta ya cargada." />
 
       <Card style={{ padding: 18, margin: "18px 0" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
           <Field label="Venta">
             <select style={inputStyle} value={ventaId} onChange={(e) => setVentaId(e.target.value)}>
               <option value="">Elegí una venta...</option>
@@ -1046,7 +1171,7 @@ function Facturacion({ facturas, setFacturas, ventas, api }) {
         </p>
       </Card>
 
-      <Card style={{ overflow: "hidden" }}>
+      <Card style={{ overflow: "auto" }}>
         <table>
           <thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Estado</th></tr></thead>
           <tbody>
@@ -1105,8 +1230,17 @@ function InsumoRow({ i, onChange, onDelete }) {
   );
 }
 
-function Config({ apiUrl, setApiUrl, canales, setCanales, costosFijos, setCostosFijos, insumos, setInsumos, api }) {
-  const [tmp, setTmp] = useState(apiUrl);
+function Config({ apiUrl, canales, setCanales, costosFijos, setCostosFijos, insumos, setInsumos, productos, ventas, api, isMobile }) {
+  const [syncState, setSyncState] = useState("idle"); // idle | working | done
+
+  async function subirHistorial() {
+    if (!api.active) return;
+    setSyncState("working");
+    await api.bulkCreate("Productos", productos);
+    await api.bulkCreate("Ventas", ventas);
+    await api.bulkCreate("Insumos", insumos);
+    setSyncState("done");
+  }
 
   function updateCosto(campo, valor) {
     const num = Number(valor);
@@ -1160,16 +1294,27 @@ function Config({ apiUrl, setApiUrl, canales, setCanales, costosFijos, setCostos
       <Card style={{ padding: 18, margin: "18px 0" }}>
         <div style={{ fontWeight: 700, marginBottom: 8 }}>Backend en Google Sheets</div>
         <p style={{ fontSize: 13, color: T.inkSoft, marginTop: 0 }}>
-          Pegá acá la URL de tu Apps Script Web App (ver instrucciones en el código Code.gs que te entregué). Mientras esté vacío, la app funciona en modo demo con datos locales.
+          {apiUrl
+            ? "Esta web ya está conectada a tu Google Sheet (la URL está fija en el código, en la constante DEFAULT_API_URL). Para cambiarla, editá esa línea en NintaiApp.jsx."
+            : "Todavía no configuraste una URL de backend en el código (DEFAULT_API_URL). Mientras tanto, la app funciona en modo demo con datos locales."}
         </p>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input style={{ ...inputStyle, flex: 1 }} placeholder="https://script.google.com/macros/s/AKfycb.../exec" value={tmp} onChange={(e) => setTmp(e.target.value)} />
-          <button style={btnPrimary} onClick={() => setApiUrl(tmp)}>Conectar</button>
-          {apiUrl && <button style={btnGhost} onClick={() => { setApiUrl(""); setTmp(""); }}>Desconectar</button>}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, marginBottom: apiUrl ? 14 : 0 }}>
+          <Circle size={9} fill={apiUrl ? T.accent2 : T.inkSoft} stroke="none" />
+          {apiUrl ? "Conectado a Google Sheets" : "Modo demo (datos locales)"}
         </div>
+        {apiUrl && (
+          <>
+            <button style={btnPrimary} onClick={subirHistorial} disabled={syncState === "working"}>
+              {syncState === "working" ? "Subiendo..." : syncState === "done" ? "¡Listo! Historial subido" : "Subir mi historial actual a Google Sheets"}
+            </button>
+            <p style={{ fontSize: 11.5, color: T.inkSoft, marginTop: 8, marginBottom: 0 }}>
+              Usalo una sola vez: sube los productos, ventas e insumos que ves ahora en la app (datos de ejemplo de tu libro contable) como filas nuevas en tu planilla. Si lo tocás dos veces, va a duplicar las filas.
+            </p>
+          </>
+        )}
       </Card>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
         <Card style={{ padding: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ fontWeight: 700 }}>Canales y precios</div>
@@ -1221,9 +1366,9 @@ function Config({ apiUrl, setApiUrl, canales, setCanales, costosFijos, setCostos
 
 function Header({ title, subtitle, children }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
       <div>
-        <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, margin: "0 0 4px" }}>{title}</h1>
+        <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 24, margin: "0 0 4px" }}>{title}</h1>
         {subtitle && <p style={{ color: T.inkSoft, marginTop: 0, fontSize: 13.5 }}>{subtitle}</p>}
       </div>
       {children}
