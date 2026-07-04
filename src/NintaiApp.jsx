@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import {
   LayoutGrid, ShoppingCart, Package, Wallet, FileText, Receipt, Settings,
-  Plus, Trash2, Search, X, Copy, Check, Circle, Pencil, Upload, Save, Paperclip, Menu,
+  Plus, Trash2, Search, X, Copy, Check, Circle, Pencil, Upload, Save, Paperclip, Menu, BookOpen, Image as ImageIcon, ChevronDown, ChevronUp, Download,
 } from "lucide-react";
 
 /* ---------------------------------------------------------------------
@@ -38,20 +38,22 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 /* ------------------------- datos semilla (de tu libro contable) ------------------------- */
 
 const SEED_PRODUCTOS = [
-  { id: "p1", categoria: "Maceta", nombre: "Daichi", variante: "Mediana (12cm)", pesoGramos: 119.1, horasImpresion: 6, costoFilamento: 2382, costoLuz: 2145.36, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 5730.36, margen: 0.6, precioVenta: 10000, ganancia: 4269.64, activo: true },
-  { id: "p2", categoria: "Maceta", nombre: "Daichi", variante: "Grande (17.5cm)", pesoGramos: 221, horasImpresion: 9, costoFilamento: 4420, costoLuz: 3218.04, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 8841.04, margen: 0.6, precioVenta: 16000, ganancia: 7158.96, activo: true },
-  { id: "p3", categoria: "Lámpara", nombre: "Kumo", variante: "Única", pesoGramos: 434.85, horasImpresion: 10.85, costoFilamento: 8697, costoLuz: 3879.53, manoObra: 2000, insumos: 5000, packaging: 1203, costoFinal: 20779.53, margen: 0.29, precioVenta: 30000, ganancia: 9220.47, activo: true },
-  { id: "p4", categoria: "Lámpara", nombre: "Hikari", variante: "Única", pesoGramos: 199.5, horasImpresion: 7.13, costoFilamento: 3990, costoLuz: 2550.59, manoObra: 2000, insumos: 5000, packaging: 1203, costoFinal: 14743.59, margen: 0.5, precioVenta: 25000, ganancia: 10256.41, activo: true },
-  { id: "p5", categoria: "Lámpara", nombre: "Haku", variante: "Única", pesoGramos: 92.6, horasImpresion: 4.05, costoFilamento: 1852, costoLuz: 1448.12, manoObra: 2000, insumos: 5000, packaging: 1203, costoFinal: 11503.12, margen: 0.42, precioVenta: 18500, ganancia: 6996.88, activo: true },
-  { id: "p6", categoria: "Lámpara", nombre: "Itamae", variante: "Única", pesoGramos: 212, horasImpresion: 7.4, costoFilamento: 4240, costoLuz: 2645.94, manoObra: 2000, insumos: 5000, packaging: 1203, costoFinal: 15088.94, margen: 0.36, precioVenta: 23000, ganancia: 7911.06, activo: true },
-  { id: "p7", categoria: "Lámpara", nombre: "Asami", variante: "Única", pesoGramos: 119, horasImpresion: 5.3, costoFilamento: 2380, costoLuz: 1895.07, manoObra: 2000, insumos: 5000, packaging: 1203, costoFinal: 12478.07, margen: 0.39, precioVenta: 19500, ganancia: 7021.93, activo: true },
-  { id: "p8", categoria: "Set Ishi", nombre: "Jarrón", variante: "Ishi", pesoGramos: 108.4, horasImpresion: 4.18, costoFilamento: 0, costoLuz: 1495.79, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 2698.79, margen: 1, precioVenta: 8500, ganancia: 5801.21, activo: true },
-  { id: "p9", categoria: "Set Ishi", nombre: "Porta Vela", variante: "Ishi", pesoGramos: 18.3, horasImpresion: 0.77, costoFilamento: 366, costoLuz: 274.13, manoObra: 0, insumos: 800, packaging: 1203, costoFinal: 2643.13, margen: 1, precioVenta: 3500, ganancia: 856.87, activo: true },
-  { id: "p10", categoria: "Set Ishi", nombre: "Bandeja", variante: "Ishi", pesoGramos: 46, horasImpresion: 0.93, costoFilamento: 920, costoLuz: 333.72, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 2456.72, margen: 1, precioVenta: 4500, ganancia: 2043.28, activo: true },
-  { id: "p11", categoria: "Set Ishi", nombre: "Kit (vela)", variante: "Ishi", pesoGramos: 172.7, horasImpresion: 5.88, costoFilamento: 3454, costoLuz: 2103.64, manoObra: 0, insumos: 800, packaging: 1203, costoFinal: 7560.64, margen: 1.16, precioVenta: 15000, ganancia: 7439.36, activo: true },
-  { id: "p12", categoria: "Set Ishi", nombre: "Caramelera", variante: "Ishi", pesoGramos: 85, horasImpresion: 3.57, costoFilamento: 1700, costoLuz: 1275.3, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 4178.3, margen: 1, precioVenta: 7000, ganancia: 2821.7, activo: true },
-  { id: "p13", categoria: "Set Ishi", nombre: "Kit (tarro)", variante: "Ishi", pesoGramos: 239.4, horasImpresion: 8.68, costoFilamento: 4788, costoLuz: 3104.81, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 9095.81, margen: 1.07, precioVenta: 18000, ganancia: 8904.19, activo: true },
+  { id: "p1", categoria: "Maceta", nombre: "Daichi", variante: "Mediana (12cm)", pesoGramos: 119.1, horasImpresion: 6, costoFilamento: 2382, costoLuz: 2145.36, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 5730.36, margen: 0.6, precioVenta: 10000, ganancia: 4269.64, activo: true, tagline: "El set completo: vasija, vela y tapa torneada", descripcion: "Versión completa del set ISHI, con portavela de tapa torneada y pomo. Pensado como kit de regalo para mesa de living o escritorio.", medidas: "Diámetro 12 cm", luz: "", alimentacion: "", coloresDisponibles: "Consultar disponibilidad", imagenNombre: "", imagenUrl: "" },
+  { id: "p2", categoria: "Maceta", nombre: "Daichi", variante: "Grande (17.5cm)", pesoGramos: 221, horasImpresion: 9, costoFilamento: 4420, costoLuz: 3218.04, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 8841.04, margen: 0.6, precioVenta: 16000, ganancia: 7158.96, activo: true, tagline: "El set completo: vasija, vela y tapa torneada", descripcion: "Versión completa del set ISHI, con portavela de tapa torneada y pomo. Pensado como kit de regalo para mesa de living o escritorio.", medidas: "Diámetro 17.5 cm", luz: "", alimentacion: "", coloresDisponibles: "Consultar disponibilidad", imagenNombre: "", imagenUrl: "" },
+  { id: "p3", categoria: "Lámpara", nombre: "Kumo", variante: "Única", pesoGramos: 434.85, horasImpresion: 10.85, costoFilamento: 8697, costoLuz: 3879.53, manoObra: 2000, insumos: 5000, packaging: 1203, costoFinal: 20779.53, margen: 0.29, precioVenta: 30000, ganancia: 9220.47, activo: true, tagline: "Robustez y sofisticación", descripcion: "Lámpara robusta con luz cálida, difundida de manera única por su particular forma. Ideal para complementar tus espacios. Base de color a elección.", medidas: "Alto 21 × Diámetro 16 cm", luz: "LED cálida 5W – Portalámpara E27", alimentacion: "Corriente 220V, cable 1m / 1.5m", coloresDisponibles: "Blanco (base a elección)", imagenNombre: "", imagenUrl: "" },
+  { id: "p4", categoria: "Lámpara", nombre: "Hikari", variante: "Única", pesoGramos: 199.5, horasImpresion: 7.13, costoFilamento: 3990, costoLuz: 2550.59, manoObra: 2000, insumos: 5000, packaging: 1203, costoFinal: 14743.59, margen: 0.5, precioVenta: 25000, ganancia: 10256.41, activo: true, tagline: "Luz que respira entre ondas talladas", descripcion: "Lámpara con pantalla de relieve ondulado que difunde una luz cálida y envolvente, inspirada en el movimiento del agua.", medidas: "Alto 21 × Ancho 13 × Profundidad 9 cm", luz: "LED cálida 5W – Portalámpara E27", alimentacion: "Corriente 220V, cable 1m / 1.5m", coloresDisponibles: "Blanco", imagenNombre: "", imagenUrl: "" },
+  { id: "p5", categoria: "Lámpara", nombre: "Haku", variante: "Única", pesoGramos: 92.6, horasImpresion: 4.05, costoFilamento: 1852, costoLuz: 1448.12, manoObra: 2000, insumos: 5000, packaging: 1203, costoFinal: 11503.12, margen: 0.42, precioVenta: 18500, ganancia: 6996.88, activo: true, tagline: "Una gota de luz en espiral", descripcion: "Volumen orgánico en forma de gota con relieve espiralado. Su silueta escultórica funciona tanto encendida como apagada, como objeto de diseño.", medidas: "Alto 18 × Diámetro 10 cm", luz: "LED cálida 5W – Portalámpara E27", alimentacion: "Corriente 220V, cable 1m / 1.5m", coloresDisponibles: "Blanco", imagenNombre: "", imagenUrl: "" },
+  { id: "p6", categoria: "Lámpara", nombre: "Itamae", variante: "Única", pesoGramos: 212, horasImpresion: 7.4, costoFilamento: 4240, costoLuz: 2645.94, manoObra: 2000, insumos: 5000, packaging: 1203, costoFinal: 15088.94, margen: 0.36, precioVenta: 23000, ganancia: 7911.06, activo: true, tagline: "Líneas finas y luz dorada", descripcion: "Cilindro de textura estriada sobre base de color a elección. Su luz cálida crea una atmósfera serena, ideal para mesas de luz y living.", medidas: "Alto 17 × Diámetro 12 cm", luz: "LED cálida 5W – Portalámpara E27", alimentacion: "Corriente 220V, cable 1m / 1.5m", coloresDisponibles: "Blanco (base a elección)", imagenNombre: "", imagenUrl: "" },
+  { id: "p7", categoria: "Lámpara", nombre: "Asami", variante: "Única", pesoGramos: 119, horasImpresion: 5.3, costoFilamento: 2380, costoLuz: 1895.07, manoObra: 2000, insumos: 5000, packaging: 1203, costoFinal: 12478.07, margen: 0.39, precioVenta: 19500, ganancia: 7021.93, activo: true, tagline: "Anillos suaves que abrazan la llama", descripcion: "Pantalla de anillos apilados y líneas que proyecta una luz ámbar profunda, evocando los farolillos de papel japoneses tradicionales. Base de color a elección.", medidas: "Alto 18 × Diámetro 10 cm", luz: "LED cálida 5W – Portalámpara E27", alimentacion: "Corriente 220V, cable 1m / 1.5m", coloresDisponibles: "Blanco (base a elección)", imagenNombre: "", imagenUrl: "" },
+  { id: "p8", categoria: "Set Ishi", nombre: "Jarrón", variante: "Ishi", pesoGramos: 108.4, horasImpresion: 4.18, costoFilamento: 0, costoLuz: 1495.79, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 2698.79, margen: 1, precioVenta: 8500, ganancia: 5801.21, activo: true, tagline: "", descripcion: "", medidas: "", luz: "", alimentacion: "", coloresDisponibles: "", imagenNombre: "", imagenUrl: "" },
+  { id: "p9", categoria: "Set Ishi", nombre: "Porta Vela", variante: "Ishi", pesoGramos: 18.3, horasImpresion: 0.77, costoFilamento: 366, costoLuz: 274.13, manoObra: 0, insumos: 800, packaging: 1203, costoFinal: 2643.13, margen: 1, precioVenta: 3500, ganancia: 856.87, activo: true, tagline: "", descripcion: "", medidas: "", luz: "", alimentacion: "", coloresDisponibles: "", imagenNombre: "", imagenUrl: "" },
+  { id: "p10", categoria: "Set Ishi", nombre: "Bandeja", variante: "Ishi", pesoGramos: 46, horasImpresion: 0.93, costoFilamento: 920, costoLuz: 333.72, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 2456.72, margen: 1, precioVenta: 4500, ganancia: 2043.28, activo: true, tagline: "", descripcion: "", medidas: "", luz: "", alimentacion: "", coloresDisponibles: "", imagenNombre: "", imagenUrl: "" },
+  { id: "p11", categoria: "Set Ishi", nombre: "Kit (vela)", variante: "Ishi", pesoGramos: 172.7, horasImpresion: 5.88, costoFilamento: 3454, costoLuz: 2103.64, manoObra: 0, insumos: 800, packaging: 1203, costoFinal: 7560.64, margen: 1.16, precioVenta: 15000, ganancia: 7439.36, activo: true, tagline: "", descripcion: "", medidas: "", luz: "", alimentacion: "", coloresDisponibles: "", imagenNombre: "", imagenUrl: "" },
+  { id: "p12", categoria: "Set Ishi", nombre: "Caramelera", variante: "Ishi", pesoGramos: 85, horasImpresion: 3.57, costoFilamento: 1700, costoLuz: 1275.3, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 4178.3, margen: 1, precioVenta: 7000, ganancia: 2821.7, activo: true, tagline: "", descripcion: "", medidas: "", luz: "", alimentacion: "", coloresDisponibles: "", imagenNombre: "", imagenUrl: "" },
+  { id: "p13", categoria: "Set Ishi", nombre: "Kit (tarro)", variante: "Ishi", pesoGramos: 239.4, horasImpresion: 8.68, costoFilamento: 4788, costoLuz: 3104.81, manoObra: 0, insumos: 0, packaging: 1203, costoFinal: 9095.81, margen: 1.07, precioVenta: 18000, ganancia: 8904.19, activo: true, tagline: "El set completo: vasija, vela y tapa torneada", descripcion: "Versión completa del set ISHI, con portavela de tapa torneada y pomo. Pensado como kit de regalo para mesa de living o escritorio.", medidas: "Jarrón: alto 11.5 × largo 8 cm — Bandeja: alto 15.5 × largo 1 cm", luz: "", alimentacion: "", coloresDisponibles: "Consultar disponibilidad", imagenNombre: "", imagenUrl: "" },
 ];
+
+const CATEGORIA_LABELS = { "Lámpara": "Iluminación", "Maceta": "Macetas", "Set Ishi": "Deco" };
 
 const SEED_VENTAS = [
   { id: "v1", fecha: "2026-03-20", cliente: "Lucía Bossio", productoId: "p1", productoNombre: "Maceta Daichi Mediana", cantidad: 1, precioUnitario: 10000, total: 10000, canal: "Instagram (Efectivo)", metodoPago: "Transferencia", estado: "Finalizado", notas: "" },
@@ -266,6 +268,7 @@ const NAV = [
   { id: "dashboard", label: "Reportes", icon: LayoutGrid },
   { id: "ventas", label: "Ventas", icon: ShoppingCart },
   { id: "productos", label: "Productos", icon: Package },
+  { id: "catalogo", label: "Catálogo", icon: BookOpen },
   { id: "finanzas", label: "Ingresos y Gastos", icon: Wallet },
   { id: "presupuestos", label: "Presupuestos", icon: FileText },
   { id: "facturacion", label: "Facturación", icon: Receipt },
@@ -310,6 +313,14 @@ export default function NintaiApp() {
         input, select, textarea, button { font-size: 16px; }
         @media (max-width: 860px) {
           input, select, textarea, button { font-size: 14px; }
+        }
+        @media print {
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+          body * { visibility: hidden; }
+          #catalogo-print, #catalogo-print * { visibility: visible; }
+          #catalogo-print { position: absolute; inset: 0; padding: 24px; }
+          .no-print { display: none !important; }
+          #catalogo-print > div[style*="grid-template-columns"] { break-inside: auto; }
         }
       `}</style>
 
@@ -362,6 +373,7 @@ export default function NintaiApp() {
         {tab === "dashboard" && <Dashboard ventas={ventas} productos={productos} gastos={gastos} isMobile={isMobile} />}
         {tab === "ventas" && <Ventas ventas={ventas} setVentas={setVentas} productos={productos} canales={canales} api={api} isMobile={isMobile} />}
         {tab === "productos" && <Productos productos={productos} setProductos={setProductos} costosFijos={costosFijos} api={api} isMobile={isMobile} />}
+        {tab === "catalogo" && <Catalogo productos={productos} isMobile={isMobile} />}
         {tab === "finanzas" && <Finanzas gastos={gastos} setGastos={setGastos} recurrentes={recurrentes} setRecurrentes={setRecurrentes} ventas={ventas} setVentas={setVentas} api={api} isMobile={isMobile} />}
         {tab === "presupuestos" && <Presupuestos presupuestos={presupuestos} setPresupuestos={setPresupuestos} productos={productos} api={api} isMobile={isMobile} />}
         {tab === "facturacion" && <Facturacion facturas={facturas} setFacturas={setFacturas} ventas={ventas} api={api} isMobile={isMobile} />}
@@ -666,6 +678,8 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
 
 function Productos({ productos, setProductos, costosFijos, api, isMobile }) {
   const [showForm, setShowForm] = useState(false);
+  const [fichaAbierta, setFichaAbierta] = useState(null);
+  const [subiendoFoto, setSubiendoFoto] = useState(null);
   const costoHora = costosFijos.costoEquipo / costosFijos.vidaUtilHs + (costosFijos.consumoW / 1000) * costosFijos.precioKwh;
   const [form, setForm] = useState({ categoria: "Lámpara", nombre: "", variante: "", pesoGramos: 0, costoGramoFilamento: 20, horasImpresion: 0, manoObra: 0, insumos: 0, packaging: 1203, margen: 0.5 });
 
@@ -678,58 +692,14 @@ function Productos({ productos, setProductos, costosFijos, api, isMobile }) {
   }, [form, costoHora]);
 
   async function addProducto() {
-    const nuevo = { id: uid(), ...form, costoFilamento: calc.costoFilamento, costoLuz: calc.costoLuz, costoFinal: calc.costoFinal, precioVenta: calc.precioVenta, ganancia: calc.ganancia, activo: true };
+    const nuevo = {
+      id: uid(), ...form, costoFilamento: calc.costoFilamento, costoLuz: calc.costoLuz, costoFinal: calc.costoFinal, precioVenta: calc.precioVenta, ganancia: calc.ganancia, activo: true,
+      tagline: "", descripcion: "", medidas: "", luz: "", alimentacion: "", coloresDisponibles: "", imagenNombre: "", imagenUrl: "",
+    };
     setProductos((p) => [nuevo, ...p]);
     if (api.active) await api.create("Productos", nuevo);
     setShowForm(false);
   }
-
-  return (
-    <div>
-      <Header title="Productos" subtitle="Precios de venta y costos detallados de cada diseño.">
-        <button style={btnPrimary} onClick={() => setShowForm(true)}><Plus size={15} /> Nuevo producto</button>
-      </Header>
-
-      {showForm && (
-        <Card style={{ padding: 18, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 10 }}>Costo por hora de impresión calculado ({money(costoHora)}) según amortización de equipo + consumo eléctrico en Configuración.</div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(4, 1fr)", gap: 12 }}>
-            <Field label="Categoría"><input style={inputStyle} value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} /></Field>
-            <Field label="Nombre"><input style={inputStyle} value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Hikari" /></Field>
-            <Field label="Variante"><input style={inputStyle} value={form.variante} onChange={(e) => setForm({ ...form, variante: e.target.value })} placeholder="Ej: Única" /></Field>
-            <Field label="Peso (g)"><input type="number" style={inputStyle} value={form.pesoGramos} onChange={(e) => setForm({ ...form, pesoGramos: e.target.value })} /></Field>
-            <Field label="Costo / gramo filamento"><input type="number" style={inputStyle} value={form.costoGramoFilamento} onChange={(e) => setForm({ ...form, costoGramoFilamento: e.target.value })} /></Field>
-            <Field label="Horas de impresión"><input type="number" style={inputStyle} value={form.horasImpresion} onChange={(e) => setForm({ ...form, horasImpresion: e.target.value })} /></Field>
-            <Field label="Mano de obra"><input type="number" style={inputStyle} value={form.manoObra} onChange={(e) => setForm({ ...form, manoObra: e.target.value })} /></Field>
-            <Field label="Insumos (rosca, cable, etc)"><input type="number" style={inputStyle} value={form.insumos} onChange={(e) => setForm({ ...form, insumos: e.target.value })} /></Field>
-            <Field label="Packaging"><input type="number" style={inputStyle} value={form.packaging} onChange={(e) => setForm({ ...form, packaging: e.target.value })} /></Field>
-            <Field label="Margen deseado (0.5 = 50%)"><input type="number" step="0.05" style={inputStyle} value={form.margen} onChange={(e) => setForm({ ...form, margen: e.target.value })} /></Field>
-          </div>
-          <div style={{ display: "flex", gap: 18, marginTop: 14, padding: "12px 14px", background: T.paperDim, borderRadius: 8, fontSize: 13 }}>
-            <div>Costo final: <b style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(calc.costoFinal)}</b></div>
-            <div>Precio sugerido: <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.accent }}>{money(calc.precioVenta)}</b></div>
-            <div>Ganancia: <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.accent2 }}>{money(calc.ganancia)}</b></div>
-          </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-            <button style={btnPrimary} onClick={addProducto}>Guardar producto</button>
-            <button style={btnGhost} onClick={() => setShowForm(false)}>Cancelar</button>
-          </div>
-        </Card>
-      )}
-
-      <Card style={{ overflow: "auto" }}>
-        <div style={{ fontSize: 11.5, color: T.inkSoft, padding: "10px 14px 0" }}>La tabla es editable: hacé clic en cualquier celda para corregir precios o costos.</div>
-        <table>
-          <thead><tr><th>Categoría</th><th>Nombre</th><th>Variante</th><th>Peso (g)</th><th>Hs</th><th>Costo final</th><th>Precio</th><th>Ganancia</th><th>Margen %</th><th></th></tr></thead>
-          <tbody>
-            {productos.map((p) => (
-              <ProductoRow key={p.id} p={p} onChange={(campo, valor) => updateProducto(p.id, campo, valor)} onDelete={() => deleteProducto(p.id)} />
-            ))}
-          </tbody>
-        </table>
-      </Card>
-    </div>
-  );
 
   async function updateProducto(id, campo, valor) {
     setProductos((list) => list.map((p) => {
@@ -748,9 +718,120 @@ function Productos({ productos, setProductos, costosFijos, api, isMobile }) {
     setProductos((list) => list.filter((p) => p.id !== id));
     if (api.active) await api.remove("Productos", id);
   }
+
+  function onFotoFile(id, e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result;
+      if (api.active) {
+        setSubiendoFoto(id);
+        try {
+          const res = await api.uploadFile(file.name, dataUrl);
+          updateProducto(id, "imagenUrl", res.url || "");
+          updateProducto(id, "imagenNombre", file.name);
+        } finally {
+          setSubiendoFoto(null);
+        }
+      } else {
+        updateProducto(id, "imagenUrl", dataUrl);
+        updateProducto(id, "imagenNombre", file.name);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <div>
+      <Header title="Productos" subtitle="Precios de venta, costos detallados y la ficha que alimenta tu Catálogo.">
+        <button style={btnPrimary} onClick={() => setShowForm(true)}><Plus size={15} /> Nuevo producto</button>
+      </Header>
+
+      {showForm && (
+        <Card style={{ padding: 18, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 10 }}>Costo por hora de impresión calculado ({money(costoHora)}) según amortización de equipo + consumo eléctrico en Configuración.</div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(4, 1fr)", gap: 12 }}>
+            <Field label="Categoría"><input style={inputStyle} value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} /></Field>
+            <Field label="Nombre"><input style={inputStyle} value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Hikari" /></Field>
+            <Field label="Variante"><input style={inputStyle} value={form.variante} onChange={(e) => setForm({ ...form, variante: e.target.value })} placeholder="Ej: Única" /></Field>
+            <Field label="Peso (g)"><input type="number" style={inputStyle} value={form.pesoGramos} onChange={(e) => setForm({ ...form, pesoGramos: e.target.value })} /></Field>
+            <Field label="Costo / gramo filamento"><input type="number" style={inputStyle} value={form.costoGramoFilamento} onChange={(e) => setForm({ ...form, costoGramoFilamento: e.target.value })} /></Field>
+            <Field label="Horas de impresión"><input type="number" style={inputStyle} value={form.horasImpresion} onChange={(e) => setForm({ ...form, horasImpresion: e.target.value })} /></Field>
+            <Field label="Mano de obra"><input type="number" style={inputStyle} value={form.manoObra} onChange={(e) => setForm({ ...form, manoObra: e.target.value })} /></Field>
+            <Field label="Insumos (rosca, cable, etc)"><input type="number" style={inputStyle} value={form.insumos} onChange={(e) => setForm({ ...form, insumos: e.target.value })} /></Field>
+            <Field label="Packaging"><input type="number" style={inputStyle} value={form.packaging} onChange={(e) => setForm({ ...form, packaging: e.target.value })} /></Field>
+            <Field label="Margen deseado (0.5 = 50%)"><input type="number" step="0.05" style={inputStyle} value={form.margen} onChange={(e) => setForm({ ...form, margen: e.target.value })} /></Field>
+          </div>
+          <div style={{ display: "flex", gap: 18, marginTop: 14, padding: "12px 14px", background: T.paperDim, borderRadius: 8, fontSize: 13, flexWrap: "wrap" }}>
+            <div>Costo final: <b style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(calc.costoFinal)}</b></div>
+            <div>Precio sugerido: <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.accent }}>{money(calc.precioVenta)}</b></div>
+            <div>Ganancia: <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.accent2 }}>{money(calc.ganancia)}</b></div>
+          </div>
+          <p style={{ fontSize: 11.5, color: T.inkSoft, marginTop: 10 }}>Después de guardarlo, abrí su "Ficha de catálogo" en la tabla para sumarle frase, descripción, medidas y foto — así aparece completo en la pestaña Catálogo.</p>
+          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+            <button style={btnPrimary} onClick={addProducto}>Guardar producto</button>
+            <button style={btnGhost} onClick={() => setShowForm(false)}>Cancelar</button>
+          </div>
+        </Card>
+      )}
+
+      <Card style={{ overflow: "auto" }}>
+        <div style={{ fontSize: 11.5, color: T.inkSoft, padding: "10px 14px 0" }}>La tabla es editable: hacé clic en cualquier celda para corregir precios o costos. Usá "Ficha" para completar los datos del Catálogo.</div>
+        <table>
+          <thead><tr><th>Categoría</th><th>Nombre</th><th>Variante</th><th>Peso (g)</th><th>Hs</th><th>Costo final</th><th>Precio</th><th>Ganancia</th><th>Margen %</th><th></th><th></th></tr></thead>
+          <tbody>
+            {productos.map((p) => (
+              <React.Fragment key={p.id}>
+                <ProductoRow
+                  p={p}
+                  onChange={(campo, valor) => updateProducto(p.id, campo, valor)}
+                  onDelete={() => deleteProducto(p.id)}
+                  onToggleFicha={() => setFichaAbierta(fichaAbierta === p.id ? null : p.id)}
+                  fichaAbierta={fichaAbierta === p.id}
+                />
+                {fichaAbierta === p.id && (
+                  <tr>
+                    <td colSpan={11} style={{ background: T.paperDim + "50", padding: 0 }}>
+                      <div style={{ padding: 16, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "180px 1fr", gap: 16 }}>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: T.inkSoft, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Foto</div>
+                          {p.imagenUrl ? (
+                            <img src={p.imagenUrl} alt={p.nombre} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 8, border: `1px solid ${T.line}`, marginBottom: 8 }} />
+                          ) : (
+                            <div style={{ width: "100%", aspectRatio: "1", borderRadius: 8, border: `1px dashed ${T.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: T.line, marginBottom: 8 }}>
+                              <ImageIcon size={28} />
+                            </div>
+                          )}
+                          <label style={{ ...btnGhost, width: "100%", justifyContent: "center", cursor: subiendoFoto === p.id ? "wait" : "pointer", opacity: subiendoFoto === p.id ? 0.6 : 1, fontSize: 12 }}>
+                            <Upload size={13} /> {subiendoFoto === p.id ? "Subiendo..." : "Subir foto"}
+                            <input type="file" accept="image/*" onChange={(e) => onFotoFile(p.id, e)} disabled={subiendoFoto === p.id} style={{ display: "none" }} />
+                          </label>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
+                          <Field label="Frase / tagline"><input style={inputStyle} value={p.tagline || ""} onChange={(e) => updateProducto(p.id, "tagline", e.target.value)} placeholder="Ej: Luz que respira entre ondas talladas" /></Field>
+                          <Field label="Colores disponibles"><input style={inputStyle} value={p.coloresDisponibles || ""} onChange={(e) => updateProducto(p.id, "coloresDisponibles", e.target.value)} placeholder="Ej: Blanco (base a elección)" /></Field>
+                          <div style={{ gridColumn: isMobile ? "auto" : "1 / -1" }}>
+                            <Field label="Descripción"><textarea style={textareaStyle} value={p.descripcion || ""} onChange={(e) => updateProducto(p.id, "descripcion", e.target.value)} placeholder="Descripción del producto para el catálogo..." /></Field>
+                          </div>
+                          <Field label="Medidas"><input style={inputStyle} value={p.medidas || ""} onChange={(e) => updateProducto(p.id, "medidas", e.target.value)} placeholder="Ej: Alto 21 × Diámetro 16 cm" /></Field>
+                          <Field label="Luz"><input style={inputStyle} value={p.luz || ""} onChange={(e) => updateProducto(p.id, "luz", e.target.value)} placeholder="Ej: LED cálida 5W – E27" /></Field>
+                          <Field label="Alimentación"><input style={inputStyle} value={p.alimentacion || ""} onChange={(e) => updateProducto(p.id, "alimentacion", e.target.value)} placeholder="Ej: Corriente 220V, cable 1.5m" /></Field>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
 }
 
-function ProductoRow({ p, onChange, onDelete }) {
+function ProductoRow({ p, onChange, onDelete, onToggleFicha, fichaAbierta }) {
   const cell = (campo, type = "text") => (
     <input
       type={type}
@@ -772,8 +853,111 @@ function ProductoRow({ p, onChange, onDelete }) {
       <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{cell("precioVenta", "number")}</td>
       <td style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.accent2 }}>{money(p.ganancia)}</td>
       <td>{cell("margen", "number")}</td>
+      <td>
+        <button onClick={onToggleFicha} style={{ ...btnGhost, padding: "5px 9px", fontSize: 11.5 }}>
+          Ficha {fichaAbierta ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+      </td>
       <td><button onClick={onDelete} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
     </tr>
+  );
+}
+
+/* ------------------------- Catálogo ------------------------- */
+
+function CatalogoCard({ p, numero }) {
+  const specs = [
+    p.medidas && { label: "Medidas", valor: p.medidas },
+    p.luz && { label: "Luz", valor: p.luz },
+    p.alimentacion && { label: "Alimentación", valor: p.alimentacion },
+    p.coloresDisponibles && { label: "Color", valor: p.coloresDisponibles },
+  ].filter(Boolean);
+
+  return (
+    <div style={{ background: T.ink, color: T.paper, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column", breakInside: "avoid" }}>
+      <div style={{ aspectRatio: "4 / 3", background: "#171a16", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+        {p.imagenUrl ? (
+          <img src={p.imagenUrl} alt={p.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <ImageIcon size={36} color={`${T.paper}33`} />
+        )}
+        <div style={{ position: "absolute", top: 12, left: 12, fontSize: 10, letterSpacing: 1, color: T.gold, fontFamily: "'IBM Plex Mono', monospace" }}>
+          NINTAI · MOD. {numero}
+        </div>
+      </div>
+      <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+        <div>
+          <div style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700 }}>{p.nombre}</div>
+          {p.tagline && <div style={{ fontSize: 12.5, fontStyle: "italic", color: T.gold, marginTop: 2 }}>{p.tagline}</div>}
+        </div>
+        {p.descripcion && <div style={{ fontSize: 12.5, lineHeight: 1.5, color: `${T.paper}cc` }}>{p.descripcion}</div>}
+
+        {specs.length > 0 && (
+          <div style={{ borderTop: `1px solid ${T.paper}22`, paddingTop: 10, marginTop: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ fontSize: 9.5, letterSpacing: 1, textTransform: "uppercase", color: `${T.paper}77`, marginBottom: 2 }}>Ficha técnica</div>
+            {specs.map((s) => (
+              <div key={s.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, gap: 10 }}>
+                <span style={{ color: `${T.paper}88` }}>{s.label}</span>
+                <span style={{ textAlign: "right" }}>{s.valor}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: specs.length ? 4 : "auto", paddingTop: 10, borderTop: specs.length ? "none" : `1px solid ${T.paper}22` }}>
+          <span style={{ fontSize: 9.5, letterSpacing: 1, textTransform: "uppercase", color: `${T.paper}77` }}>Colección Japandi</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 16, color: T.gold }}>{money(p.precioVenta)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Catalogo({ productos, isMobile }) {
+  const grupos = useMemo(() => {
+    const orden = [];
+    const map = {};
+    productos.forEach((p) => {
+      const label = CATEGORIA_LABELS[p.categoria] || p.categoria;
+      if (!map[label]) { map[label] = []; orden.push(label); }
+      map[label].push(p);
+    });
+    return orden.map((label) => ({ label, items: map[label] }));
+  }, [productos]);
+
+  let contador = 0;
+
+  return (
+    <div id="catalogo-print">
+      <Header title="Catálogo" subtitle="Se arma solo con lo que cargues en Productos — agregá uno y aparece acá.">
+        <button className="no-print" style={btnPrimary} onClick={() => window.print()}><Download size={15} /> Descargar catálogo (PDF)</button>
+      </Header>
+
+      <div style={{ background: T.ink, color: T.paper, borderRadius: 14, padding: isMobile ? "28px 20px" : "40px 32px", textAlign: "center", margin: "18px 0 28px" }}>
+        <div style={{ fontFamily: "'Fraunces', serif", fontSize: isMobile ? 30 : 40, letterSpacing: 2 }}>NINTAI</div>
+        <div style={{ fontSize: 11, letterSpacing: 6, color: T.gold, marginTop: 4 }}>D E S I G N &nbsp; H O U S E</div>
+        <div style={{ marginTop: 14, fontSize: 13, color: `${T.paper}99` }}>Colección Japandi · Luz cálida, formas serenas</div>
+      </div>
+
+      {grupos.map((g) => (
+        <div key={g.label} style={{ marginBottom: 30, breakInside: "avoid-page" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: 0, textTransform: "uppercase", letterSpacing: 1 }}>{g.label}</h2>
+            <span style={{ fontSize: 11.5, color: T.inkSoft }}>Colección Japandi · Luz cálida, formas serenas</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(260px, 1fr))", gap: 18 }}>
+            {g.items.map((p) => {
+              contador += 1;
+              return <CatalogoCard key={p.id} p={p} numero={String(contador).padStart(2, "0")} />;
+            })}
+          </div>
+        </div>
+      ))}
+
+      <div style={{ textAlign: "center", padding: "24px 0 8px", fontSize: 12, color: T.inkSoft }}>
+        NINTAI Design House · Pedidos y consultas · IG: @design.nintai
+      </div>
+    </div>
   );
 }
 
