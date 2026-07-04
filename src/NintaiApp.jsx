@@ -244,7 +244,10 @@ const NAV = [
 
 export default function NintaiApp() {
   const [tab, setTab] = useState("dashboard");
-  const [apiUrl, setApiUrl] = useState("");
+  // URL de tu Apps Script (Google Sheets como backend). Podés cambiarla también
+  // desde la pestaña Configuración sin tocar el código.
+  const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzyrx2soG7C39-9A_3_Klsy5UE4-bli7a-YGGzemryow4VvSUjnmBtNDXbRs-swYsUK/exec";
+  const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL);
   const api = useApi(apiUrl);
 
   const [productos, setProductos] = useState(SEED_PRODUCTOS);
