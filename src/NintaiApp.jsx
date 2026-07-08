@@ -285,15 +285,54 @@ export default function NintaiApp() {
   const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL);
   const api = useApi(apiUrl);
 
-  const [productos, setProductos] = useState(SEED_PRODUCTOS);
-  const [ventas, setVentas] = useState(SEED_VENTAS);
-  const [insumos, setInsumos] = useState(SEED_INSUMOS);
+  // Si hay API configurada, arrancamos con arrays vacíos y cargamos desde Sheets.
+  // Si no hay API, mostramos los datos semilla de ejemplo.
+  const [productos, setProductos] = useState(DEFAULT_API_URL ? [] : SEED_PRODUCTOS);
+  const [ventas, setVentas] = useState(DEFAULT_API_URL ? [] : SEED_VENTAS);
+  const [insumos, setInsumos] = useState(DEFAULT_API_URL ? [] : SEED_INSUMOS);
   const [gastos, setGastos] = useState([]);
   const [recurrentes, setRecurrentes] = useState([]);
   const [presupuestos, setPresupuestos] = useState([]);
   const [facturas, setFacturas] = useState([]);
-  const [canales, setCanales] = useState(SEED_CANALES);
+  const [canales, setCanales] = useState(DEFAULT_API_URL ? [] : SEED_CANALES);
   const [costosFijos, setCostosFijos] = useState(SEED_COSTOS_FIJOS);
+  const [cargando, setCargando] = useState(!!DEFAULT_API_URL);
+
+  // Carga inicial desde Google Sheets al montar la app (o al cambiar la URL de API).
+  useEffect(() => {
+    if (!api.active) return;
+    let cancelado = false;
+    async function cargar() {
+      setCargando(true);
+      try {
+        const [v, p, ins, g, r, pr, f, c] = await Promise.all([
+          api.list("Ventas"),
+          api.list("Productos"),
+          api.list("Insumos"),
+          api.list("Gastos"),
+          api.list("GastosRecurrentes"),
+          api.list("Presupuestos"),
+          api.list("Facturas"),
+          api.list("CanalesPrecios"),
+        ]);
+        if (cancelado) return;
+        if (Array.isArray(v) && v.length) setVentas(v);
+        if (Array.isArray(p) && p.length) setProductos(p);
+        if (Array.isArray(ins) && ins.length) setInsumos(ins);
+        if (Array.isArray(g) && g.length) setGastos(g);
+        if (Array.isArray(r) && r.length) setRecurrentes(r);
+        if (Array.isArray(pr) && pr.length) setPresupuestos(pr);
+        if (Array.isArray(f) && f.length) setFacturas(f);
+        if (Array.isArray(c) && c.length) setCanales(c);
+      } catch (err) {
+        console.error("Error cargando datos desde Google Sheets:", err);
+      } finally {
+        if (!cancelado) setCargando(false);
+      }
+    }
+    cargar();
+    return () => { cancelado = true; };
+  }, [apiUrl]);
 
   function irA(id) {
     setTab(id);
@@ -370,14 +409,24 @@ export default function NintaiApp() {
 
       {/* Contenido */}
       <div style={{ flex: 1, padding: isMobile ? "18px 14px" : "26px 32px", overflow: "auto", minWidth: 0 }}>
-        {tab === "dashboard" && <Dashboard ventas={ventas} productos={productos} gastos={gastos} isMobile={isMobile} />}
-        {tab === "ventas" && <Ventas ventas={ventas} setVentas={setVentas} productos={productos} canales={canales} api={api} isMobile={isMobile} />}
-        {tab === "productos" && <Productos productos={productos} setProductos={setProductos} costosFijos={costosFijos} api={api} isMobile={isMobile} />}
-        {tab === "catalogo" && <Catalogo productos={productos} isMobile={isMobile} />}
-        {tab === "finanzas" && <Finanzas gastos={gastos} setGastos={setGastos} recurrentes={recurrentes} setRecurrentes={setRecurrentes} ventas={ventas} setVentas={setVentas} api={api} isMobile={isMobile} />}
-        {tab === "presupuestos" && <Presupuestos presupuestos={presupuestos} setPresupuestos={setPresupuestos} productos={productos} api={api} isMobile={isMobile} />}
-        {tab === "facturacion" && <Facturacion facturas={facturas} setFacturas={setFacturas} ventas={ventas} api={api} isMobile={isMobile} />}
-        {tab === "config" && <Config apiUrl={apiUrl} canales={canales} setCanales={setCanales} costosFijos={costosFijos} setCostosFijos={setCostosFijos} insumos={insumos} setInsumos={setInsumos} productos={productos} ventas={ventas} api={api} isMobile={isMobile} />}
+        {cargando ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: 14, color: T.inkSoft }}>
+            <style>{`@keyframes nintai-spin { to { transform: rotate(360deg); } }`}</style>
+            <div style={{ width: 36, height: 36, border: `3px solid ${T.line}`, borderTopColor: T.accent, borderRadius: "50%", animation: "nintai-spin 0.8s linear infinite" }} />
+            <div style={{ fontSize: 13 }}>Cargando datos desde Google Sheets…</div>
+          </div>
+        ) : (
+          <>
+            {tab === "dashboard" && <Dashboard ventas={ventas} productos={productos} gastos={gastos} isMobile={isMobile} />}
+            {tab === "ventas" && <Ventas ventas={ventas} setVentas={setVentas} productos={productos} canales={canales} api={api} isMobile={isMobile} />}
+            {tab === "productos" && <Productos productos={productos} setProductos={setProductos} costosFijos={costosFijos} api={api} isMobile={isMobile} />}
+            {tab === "catalogo" && <Catalogo productos={productos} isMobile={isMobile} />}
+            {tab === "finanzas" && <Finanzas gastos={gastos} setGastos={setGastos} recurrentes={recurrentes} setRecurrentes={setRecurrentes} ventas={ventas} setVentas={setVentas} api={api} isMobile={isMobile} />}
+            {tab === "presupuestos" && <Presupuestos presupuestos={presupuestos} setPresupuestos={setPresupuestos} productos={productos} api={api} isMobile={isMobile} />}
+            {tab === "facturacion" && <Facturacion facturas={facturas} setFacturas={setFacturas} ventas={ventas} api={api} isMobile={isMobile} />}
+            {tab === "config" && <Config apiUrl={apiUrl} canales={canales} setCanales={setCanales} costosFijos={costosFijos} setCostosFijos={setCostosFijos} insumos={insumos} setInsumos={setInsumos} productos={productos} ventas={ventas} api={api} isMobile={isMobile} />}
+          </>
+        )}
       </div>
     </div>
   );
