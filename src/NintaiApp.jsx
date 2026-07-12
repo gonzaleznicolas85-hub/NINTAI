@@ -399,8 +399,15 @@ export default function NintaiApp() {
         tr:hover td { background: ${T.paperDim}40; }
         ::placeholder{ color: #9a9484; }
         input, select, textarea, button { font-size: 16px; }
+        [style*="IBM Plex Mono"] { font-variant-numeric: tabular-nums; }
+        :focus-visible { outline: 2px solid ${T.gold}; outline-offset: 2px; }
+        button { transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out, transform 100ms ease-out; }
+        button:active { transform: scale(0.97); }
         @media (max-width: 860px) {
           input, select, textarea, button { font-size: 14px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
         }
         @media print {
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
@@ -427,7 +434,12 @@ export default function NintaiApp() {
             </div>
           </div>
           {isMobile && (
-            <button onClick={() => setNavOpen((v) => !v)} style={{ background: "transparent", border: `1px solid ${T.paper}55`, color: T.paper, borderRadius: 7, padding: 8, cursor: "pointer", display: "flex" }}>
+            <button
+              onClick={() => setNavOpen((v) => !v)}
+              aria-label={navOpen ? "Cerrar menú" : "Abrir menú"}
+              aria-expanded={navOpen}
+              style={{ background: "transparent", border: `1px solid ${T.paper}55`, color: T.paper, borderRadius: 7, padding: 8, cursor: "pointer", display: "flex" }}
+            >
               {navOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
           )}
@@ -636,7 +648,7 @@ function PagosPanel({ v, onChange }) {
                 <td>{fmtDate(p.fecha)}</td>
                 <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(p.monto)}</td>
                 <td style={{ fontSize: 12, color: T.inkSoft }}>{p.metodoPago}</td>
-                <td><button onClick={() => borrarPago(p.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={13} /></button></td>
+                <td><button onClick={() => borrarPago(p.id)} aria-label="Eliminar pago" style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={13} /></button></td>
               </tr>
             ))}
           </tbody>
@@ -887,8 +899,8 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
                     </td>
                     <td><EstadoSelect value={v.estado} onChange={(estado) => cambiarEstado(v, estado)} /></td>
                     <td style={{ whiteSpace: "nowrap" }}>
-                      <button onClick={() => abrirEdicion(v)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, marginRight: 8 }}><Pencil size={14} /></button>
-                      <button onClick={() => remove(v.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button>
+                      <button onClick={() => abrirEdicion(v)} aria-label="Editar venta" style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, marginRight: 8 }}><Pencil size={14} /></button>
+                      <button onClick={() => remove(v.id)} aria-label="Eliminar venta" style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button>
                     </td>
                   </tr>
                   {pagosAbiertos === v.id && (
@@ -1101,7 +1113,7 @@ function ProductoRow({ p, onChange, onDelete, onToggleFicha, fichaAbierta }) {
           Ficha {fichaAbierta ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </button>
       </td>
-      <td><button onClick={onDelete} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
+      <td><button onClick={onDelete} aria-label="Eliminar producto" style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
     </tr>
   );
 }
@@ -1246,7 +1258,7 @@ function GastoRow({ g, onChange, onDelete }) {
       <td>{cell("descripcion")}</td>
       <td>{cell("tipo")}</td>
       <td><MontoCell value={g.monto} onChange={(v) => onChange("monto", v)} /></td>
-      <td><button onClick={onDelete} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
+      <td><button onClick={onDelete} aria-label="Eliminar gasto" style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
     </tr>
   );
 }
@@ -1261,7 +1273,7 @@ function RecurrenteRow({ r, onChange, onDelete }) {
       <td>{cell("frecuencia")}</td>
       <td>{cell("proximoPago", "date")}</td>
       <td><MontoCell value={r.monto} onChange={(v) => onChange("monto", v)} /></td>
-      <td><button onClick={onDelete} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
+      <td><button onClick={onDelete} aria-label="Eliminar pago recurrente" style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
     </tr>
   );
 }
@@ -1688,7 +1700,7 @@ function CanalRow({ c, onChange, onDelete }) {
       <td>{cell("comisionPct", "number")}%</td>
       <td>{cell("impuestosPct", "number")}%</td>
       <td>x{cell("multiplicador", "number")}</td>
-      <td><button onClick={onDelete} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
+      <td><button onClick={onDelete} aria-label="Eliminar canal" style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
     </tr>
   );
 }
@@ -1704,7 +1716,7 @@ function InsumoRow({ i, onChange, onDelete }) {
       <td>{cell("marca")}</td>
       <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{cell("costoPorGramo", "number")}</td>
       <td style={{ color: Number(i.stockRestante) < 0 ? T.accent : T.ink, fontFamily: "'IBM Plex Mono', monospace" }}>{cell("stockRestante", "number")} g</td>
-      <td><button onClick={onDelete} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
+      <td><button onClick={onDelete} aria-label="Eliminar insumo" style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
     </tr>
   );
 }
