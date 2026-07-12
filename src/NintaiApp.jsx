@@ -560,7 +560,9 @@ const BLANK_PAGO_FORM = { fecha: new Date().toISOString().slice(0, 10), monto: "
 function PagosPanel({ v, onChange }) {
   const [pForm, setPForm] = useState(BLANK_PAGO_FORM);
   const pagos = parsePagos(v);
-  const pagado = sumPagos(pagos);
+  const finalizada = v.estado === "Finalizado";
+  // Una venta Finalizada se considera pagada en su totalidad sin necesidad de cargar pagos manualmente.
+  const pagado = finalizada ? (v.total || 0) : sumPagos(pagos);
   const saldo = (v.total || 0) - pagado;
 
   function agregarPago() {
@@ -575,6 +577,11 @@ function PagosPanel({ v, onChange }) {
 
   return (
     <div style={{ padding: 16 }}>
+      {finalizada && (
+        <div style={{ fontSize: 12.5, color: T.accent2, marginBottom: 12, fontWeight: 600 }}>
+          ✓ Venta finalizada — se considera pagada en su totalidad, no hace falta cargar el monto.
+        </div>
+      )}
       <div style={{ display: "flex", gap: 20, marginBottom: 14, flexWrap: "wrap", fontSize: 13 }}>
         <div>Total venta: <b style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(v.total)}</b></div>
         <div>Pagado: <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.accent2 }}>{money(pagado)}</b></div>
@@ -778,8 +785,9 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
           <tbody>
             {filtered.map((v) => {
               const pagos = parsePagos(v);
-              const pagado = sumPagos(pagos);
-              const completo = v.total > 0 && pagado >= v.total;
+              const finalizada = v.estado === "Finalizado";
+              const pagado = finalizada ? (v.total || 0) : sumPagos(pagos);
+              const completo = finalizada || (v.total > 0 && pagado >= v.total);
               return (
                 <React.Fragment key={v.id}>
                   <tr>
@@ -802,7 +810,7 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
                         onClick={() => setPagosAbiertos(pagosAbiertos === v.id ? null : v.id)}
                         style={{ ...btnGhost, padding: "5px 9px", fontSize: 11.5, color: completo ? T.accent2 : (pagado > 0 ? T.gold : T.inkSoft), borderColor: completo ? T.accent2 : T.line }}
                       >
-                        {pagado > 0 ? `${money(pagado)}/${money(v.total)}` : "Sin pagos"} {pagosAbiertos === v.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        {finalizada ? "Pagado" : (pagado > 0 ? `${money(pagado)}/${money(v.total)}` : "Sin pagos")} {pagosAbiertos === v.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                       </button>
                     </td>
                     <td><EstadoSelect value={v.estado} onChange={(estado) => cambiarEstado(v, estado)} /></td>
