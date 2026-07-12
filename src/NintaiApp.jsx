@@ -1132,7 +1132,7 @@ function CatalogoCard({ p, numero }) {
     <div style={{ background: T.ink, color: T.paper, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column", breakInside: "avoid" }}>
       <div style={{ aspectRatio: "4 / 3", background: "#171a16", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
         {p.imagenUrl ? (
-          <img src={p.imagenUrl} alt={p.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={p.imagenUrl} alt={p.nombre} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <ImageIcon size={36} color={`${T.paper}33`} />
         )}
