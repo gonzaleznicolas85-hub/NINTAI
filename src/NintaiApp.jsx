@@ -547,11 +547,76 @@ const BLANK_VENTA_FORM = {
   comprobanteNombre: "", comprobanteUrl: "",
 };
 
+// Los pagos de una venta se guardan como JSON en el campo "pagos" (mismo patrón que los items de Presupuestos).
+function parsePagos(v) {
+  try { return v.pagos ? JSON.parse(v.pagos) : []; } catch { return []; }
+}
+function sumPagos(pagos) {
+  return pagos.reduce((a, p) => a + Number(p.monto || 0), 0);
+}
+
+const BLANK_PAGO_FORM = { fecha: new Date().toISOString().slice(0, 10), monto: "", metodoPago: "Transferencia" };
+
+function PagosPanel({ v, onChange }) {
+  const [pForm, setPForm] = useState(BLANK_PAGO_FORM);
+  const pagos = parsePagos(v);
+  const pagado = sumPagos(pagos);
+  const saldo = (v.total || 0) - pagado;
+
+  function agregarPago() {
+    if (!pForm.monto) return;
+    const nuevo = { id: uid(), fecha: pForm.fecha, monto: Number(pForm.monto), metodoPago: pForm.metodoPago };
+    onChange([...pagos, nuevo]);
+    setPForm(BLANK_PAGO_FORM);
+  }
+  function borrarPago(id) {
+    onChange(pagos.filter((p) => p.id !== id));
+  }
+
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={{ display: "flex", gap: 20, marginBottom: 14, flexWrap: "wrap", fontSize: 13 }}>
+        <div>Total venta: <b style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(v.total)}</b></div>
+        <div>Pagado: <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.accent2 }}>{money(pagado)}</b></div>
+        <div>Saldo pendiente: <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: saldo > 0 ? T.accent : T.accent2 }}>{money(Math.max(saldo, 0))}</b></div>
+      </div>
+
+      {pagos.length > 0 && (
+        <table style={{ marginBottom: 14 }}>
+          <thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th></th></tr></thead>
+          <tbody>
+            {pagos.map((p) => (
+              <tr key={p.id}>
+                <td>{fmtDate(p.fecha)}</td>
+                <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(p.monto)}</td>
+                <td style={{ fontSize: 12, color: T.inkSoft }}>{p.metodoPago}</td>
+                <td><button onClick={() => borrarPago(p.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={13} /></button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <div style={{ display: "flex", gap: 10, alignItems: "end", flexWrap: "wrap" }}>
+        <Field label="Fecha del pago"><input type="date" style={inputSm} value={pForm.fecha} onChange={(e) => setPForm({ ...pForm, fecha: e.target.value })} /></Field>
+        <Field label="Monto"><input type="number" style={{ ...inputSm, width: 110 }} value={pForm.monto} onChange={(e) => setPForm({ ...pForm, monto: e.target.value })} placeholder="Ej: 10000" /></Field>
+        <Field label="Método">
+          <select style={inputSm} value={pForm.metodoPago} onChange={(e) => setPForm({ ...pForm, metodoPago: e.target.value })}>
+            <option>Transferencia</option><option>Efectivo</option><option>Mercado Pago</option>
+          </select>
+        </Field>
+        <button style={{ ...btnGhost, padding: "7px 12px" }} onClick={agregarPago}><Plus size={13} /> Agregar pago</button>
+      </div>
+    </div>
+  );
+}
+
 function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...BLANK_VENTA_FORM, canal: canales[0]?.canal || "" });
   const [q, setQ] = useState("");
+  const [pagosAbiertos, setPagosAbiertos] = useState(null);
 
   const filtered = ventas
     .filter((v) => (v.cliente + v.productoNombre).toLowerCase().includes(q.toLowerCase()))
@@ -625,6 +690,12 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
   async function remove(id) {
     setVentas((list) => list.filter((v) => v.id !== id));
     if (api.active) await api.remove("Ventas", id);
+  }
+
+  async function actualizarPagos(v, pagosArr) {
+    const pagosStr = JSON.stringify(pagosArr);
+    setVentas((list) => list.map((x) => (x.id === v.id ? { ...x, pagos: pagosStr } : x)));
+    if (api.active) await api.update("Ventas", v.id, { pagos: pagosStr });
   }
 
   return (
@@ -703,31 +774,53 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
 
       <Card style={{ overflow: "auto" }}>
         <table>
-          <thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Color</th><th>Cant.</th><th>Total</th><th>Canal</th><th>Comprob.</th><th>Estado</th><th></th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Color</th><th>Cant.</th><th>Total</th><th>Canal</th><th>Comprob.</th><th>Pagos</th><th>Estado</th><th></th></tr></thead>
           <tbody>
-            {filtered.map((v) => (
-              <tr key={v.id}>
-                <td>{fmtDate(v.fecha)}</td>
-                <td style={{ fontWeight: 600 }}>{v.cliente}</td>
-                <td>{v.productoNombre}{v.notas && <div style={{ fontSize: 11, color: T.inkSoft, marginTop: 2 }}>{v.notas}</div>}</td>
-                <td style={{ fontSize: 12, color: T.inkSoft }}>
-                  {v.colorTulipa || v.colorBase ? `Tulipa: ${v.colorTulipa || "-"} · Base: ${v.colorBase || "-"}` : (v.color || "—")}
-                </td>
-                <td>{v.cantidad}</td>
-                <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(v.total)}</td>
-                <td style={{ fontSize: 12, color: T.inkSoft }}>{v.canal}</td>
-                <td>
-                  {v.comprobanteUrl
-                    ? <a href={v.comprobanteUrl} target="_blank" rel="noreferrer" style={{ color: T.accent2 }}><Paperclip size={14} /></a>
-                    : <span style={{ color: T.line }}><Paperclip size={14} /></span>}
-                </td>
-                <td><EstadoSelect value={v.estado} onChange={(estado) => cambiarEstado(v, estado)} /></td>
-                <td style={{ whiteSpace: "nowrap" }}>
-                  <button onClick={() => abrirEdicion(v)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, marginRight: 8 }}><Pencil size={14} /></button>
-                  <button onClick={() => remove(v.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button>
-                </td>
-              </tr>
-            ))}
+            {filtered.map((v) => {
+              const pagos = parsePagos(v);
+              const pagado = sumPagos(pagos);
+              const completo = v.total > 0 && pagado >= v.total;
+              return (
+                <React.Fragment key={v.id}>
+                  <tr>
+                    <td>{fmtDate(v.fecha)}</td>
+                    <td style={{ fontWeight: 600 }}>{v.cliente}</td>
+                    <td>{v.productoNombre}{v.notas && <div style={{ fontSize: 11, color: T.inkSoft, marginTop: 2 }}>{v.notas}</div>}</td>
+                    <td style={{ fontSize: 12, color: T.inkSoft }}>
+                      {v.colorTulipa || v.colorBase ? `Tulipa: ${v.colorTulipa || "-"} · Base: ${v.colorBase || "-"}` : (v.color || "—")}
+                    </td>
+                    <td>{v.cantidad}</td>
+                    <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(v.total)}</td>
+                    <td style={{ fontSize: 12, color: T.inkSoft }}>{v.canal}</td>
+                    <td>
+                      {v.comprobanteUrl
+                        ? <a href={v.comprobanteUrl} target="_blank" rel="noreferrer" style={{ color: T.accent2 }}><Paperclip size={14} /></a>
+                        : <span style={{ color: T.line }}><Paperclip size={14} /></span>}
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => setPagosAbiertos(pagosAbiertos === v.id ? null : v.id)}
+                        style={{ ...btnGhost, padding: "5px 9px", fontSize: 11.5, color: completo ? T.accent2 : (pagado > 0 ? T.gold : T.inkSoft), borderColor: completo ? T.accent2 : T.line }}
+                      >
+                        {pagado > 0 ? `${money(pagado)}/${money(v.total)}` : "Sin pagos"} {pagosAbiertos === v.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      </button>
+                    </td>
+                    <td><EstadoSelect value={v.estado} onChange={(estado) => cambiarEstado(v, estado)} /></td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <button onClick={() => abrirEdicion(v)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, marginRight: 8 }}><Pencil size={14} /></button>
+                      <button onClick={() => remove(v.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button>
+                    </td>
+                  </tr>
+                  {pagosAbiertos === v.id && (
+                    <tr>
+                      <td colSpan={11} style={{ background: T.paperDim + "50", padding: 0 }}>
+                        <PagosPanel v={v} onChange={(pagosArr) => actualizarPagos(v, pagosArr)} />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       </Card>
