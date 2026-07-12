@@ -203,6 +203,45 @@ function EstadoSelect({ value, onChange }) {
   );
 }
 
+// Grupo de filtros tipo pill, multi-selección y apilables (se pueden combinar varios FilterGroup a la vez).
+function FilterGroup({ label, options, value, onChange }) {
+  function toggle(opt) {
+    onChange(value.includes(opt) ? value.filter((o) => o !== opt) : [...value, opt]);
+  }
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <span style={{ fontSize: 11, fontWeight: 700, color: T.inkSoft, textTransform: "uppercase", letterSpacing: 0.4, marginRight: 2 }}>{label}</span>
+      {options.map((opt) => {
+        const active = value.includes(opt);
+        return (
+          <button
+            key={opt}
+            onClick={() => toggle(opt)}
+            style={{
+              border: `1.3px solid ${active ? T.ink : T.line}`,
+              background: active ? T.ink : "transparent",
+              color: active ? T.paper : T.inkSoft,
+              borderRadius: 999, padding: "4px 11px", fontSize: 12, fontWeight: 600,
+              cursor: "pointer", whiteSpace: "nowrap",
+            }}
+          >
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function LimpiarFiltros({ activos, onClear }) {
+  if (!activos) return null;
+  return (
+    <button onClick={onClear} style={{ ...btnGhost, alignSelf: "flex-start", padding: "4px 10px", fontSize: 11.5 }}>
+      <X size={12} /> Limpiar filtros
+    </button>
+  );
+}
+
 function Card({ children, style }) {
   return (
     <div style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 10, ...style }}>
@@ -618,15 +657,26 @@ function PagosPanel({ v, onChange }) {
   );
 }
 
+const METODOS_PAGO = ["Transferencia", "Efectivo", "Mercado Pago"];
+
 function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...BLANK_VENTA_FORM, canal: canales[0]?.canal || "" });
   const [q, setQ] = useState("");
   const [pagosAbiertos, setPagosAbiertos] = useState(null);
+  const [filtroEstado, setFiltroEstado] = useState([]);
+  const [filtroCanal, setFiltroCanal] = useState([]);
+  const [filtroPago, setFiltroPago] = useState([]);
+
+  const filtrosActivos = filtroEstado.length + filtroCanal.length + filtroPago.length > 0;
+  function limpiarFiltros() { setFiltroEstado([]); setFiltroCanal([]); setFiltroPago([]); }
 
   const filtered = ventas
     .filter((v) => (v.cliente + v.productoNombre).toLowerCase().includes(q.toLowerCase()))
+    .filter((v) => filtroEstado.length === 0 || filtroEstado.includes(v.estado))
+    .filter((v) => filtroCanal.length === 0 || filtroCanal.includes(v.canal))
+    .filter((v) => filtroPago.length === 0 || filtroPago.includes(v.metodoPago))
     .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
   const productoSel = productos.find((p) => p.id === form.productoId);
   const esLampara = productoSel?.categoria === "Lámpara";
@@ -716,6 +766,13 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0" }}>
         <Search size={15} color={T.inkSoft} />
         <input style={{ ...inputStyle, flex: 1, maxWidth: 280 }} placeholder="Buscar cliente o producto..." value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+        <FilterGroup label="Estado" options={ESTADOS_VENTA} value={filtroEstado} onChange={setFiltroEstado} />
+        <FilterGroup label="Canal" options={canales.map((c) => c.canal)} value={filtroCanal} onChange={setFiltroCanal} />
+        <FilterGroup label="Pago" options={METODOS_PAGO} value={filtroPago} onChange={setFiltroPago} />
+        <LimpiarFiltros activos={filtrosActivos} onClear={limpiarFiltros} />
       </div>
 
       {showForm && (
@@ -857,8 +914,12 @@ function Productos({ productos, setProductos, costosFijos, api, isMobile }) {
   const [showForm, setShowForm] = useState(false);
   const [fichaAbierta, setFichaAbierta] = useState(null);
   const [subiendoFoto, setSubiendoFoto] = useState(null);
+  const [filtroCategoria, setFiltroCategoria] = useState([]);
   const costoHora = costosFijos.costoEquipo / costosFijos.vidaUtilHs + (costosFijos.consumoW / 1000) * costosFijos.precioKwh;
   const [form, setForm] = useState({ categoria: "Lámpara", nombre: "", variante: "", pesoGramos: 0, costoGramoFilamento: 20, horasImpresion: 0, manoObra: 0, insumos: 0, packaging: 1203, margen: 0.5 });
+
+  const categoriasDisponibles = useMemo(() => [...new Set(productos.map((p) => p.categoria))], [productos]);
+  const productosFiltrados = productos.filter((p) => filtroCategoria.length === 0 || filtroCategoria.includes(p.categoria));
 
   const calc = useMemo(() => {
     const costoFilamento = Number(form.pesoGramos) * Number(form.costoGramoFilamento);
@@ -925,6 +986,11 @@ function Productos({ productos, setProductos, costosFijos, api, isMobile }) {
         <button style={btnPrimary} onClick={() => setShowForm(true)}><Plus size={15} /> Nuevo producto</button>
       </Header>
 
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, margin: "16px 0" }}>
+        <FilterGroup label="Categoría" options={categoriasDisponibles} value={filtroCategoria} onChange={setFiltroCategoria} />
+        <LimpiarFiltros activos={filtroCategoria.length > 0} onClear={() => setFiltroCategoria([])} />
+      </div>
+
       {showForm && (
         <Card style={{ padding: 18, marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 10 }}>Costo por hora de impresión calculado ({money(costoHora)}) según amortización de equipo + consumo eléctrico en Configuración.</div>
@@ -958,7 +1024,7 @@ function Productos({ productos, setProductos, costosFijos, api, isMobile }) {
         <table>
           <thead><tr><th>Categoría</th><th>Nombre</th><th>Variante</th><th>Peso (g)</th><th>Hs</th><th>Costo final</th><th>Precio</th><th>Ganancia</th><th>Margen %</th><th></th><th></th></tr></thead>
           <tbody>
-            {productos.map((p) => (
+            {productosFiltrados.map((p) => (
               <React.Fragment key={p.id}>
                 <ProductoRow
                   p={p}
@@ -1218,14 +1284,32 @@ function IngresoRow({ v, onChange }) {
   );
 }
 
+const CATEGORIAS_GASTO = ["Insumos", "Filamento", "Herramientas", "Envíos", "Marketing", "Otro"];
+const TIPOS_GASTO = ["Variable", "Fijo"];
+
 function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setVentas, api, isMobile }) {
   const [subtab, setSubtab] = useState("gastos");
   const [gForm, setGForm] = useState({ fecha: new Date().toISOString().slice(0, 10), categoria: "Insumos", descripcion: "", monto: "", tipo: "Variable" });
   const [rForm, setRForm] = useState({ concepto: "", monto: "", frecuencia: "Mensual", proximoPago: new Date().toISOString().slice(0, 10), categoria: "Servicio" });
+  const [filtroCategoriaGasto, setFiltroCategoriaGasto] = useState([]);
+  const [filtroTipoGasto, setFiltroTipoGasto] = useState([]);
+  const [filtroEstadoIngreso, setFiltroEstadoIngreso] = useState([]);
+  const [filtroCanalIngreso, setFiltroCanalIngreso] = useState([]);
 
   const totalIngresos = ventas.reduce((a, v) => a + Number(v.total || 0), 0);
   const totalGastos = gastos.reduce((a, g) => a + Number(g.monto || 0), 0);
   const totalRecurrentes = recurrentes.reduce((a, r) => a + Number(r.monto || 0), 0);
+
+  const gastosFiltrados = gastos
+    .filter((g) => filtroCategoriaGasto.length === 0 || filtroCategoriaGasto.includes(g.categoria))
+    .filter((g) => filtroTipoGasto.length === 0 || filtroTipoGasto.includes(g.tipo))
+    .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+
+  const canalesIngreso = useMemo(() => [...new Set(ventas.map((v) => v.canal).filter(Boolean))], [ventas]);
+  const ingresosFiltrados = ventas
+    .filter((v) => filtroEstadoIngreso.length === 0 || filtroEstadoIngreso.includes(v.estado))
+    .filter((v) => filtroCanalIngreso.length === 0 || filtroCanalIngreso.includes(v.canal))
+    .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
 
   async function addGasto() {
     const nuevo = { id: uid(), ...gForm, monto: Number(gForm.monto) };
@@ -1300,13 +1384,20 @@ function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setV
               <button style={btnPrimary} onClick={addGasto}><Plus size={15} /> Agregar</button>
             </div>
           </Card>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            <FilterGroup label="Categoría" options={CATEGORIAS_GASTO} value={filtroCategoriaGasto} onChange={setFiltroCategoriaGasto} />
+            <FilterGroup label="Tipo" options={TIPOS_GASTO} value={filtroTipoGasto} onChange={setFiltroTipoGasto} />
+            <LimpiarFiltros activos={filtroCategoriaGasto.length + filtroTipoGasto.length > 0} onClear={() => { setFiltroCategoriaGasto([]); setFiltroTipoGasto([]); }} />
+          </div>
+
           <Card style={{ overflow: "auto" }}>
             <div style={{ fontSize: 11.5, color: T.inkSoft, padding: "10px 14px 0" }}>Hacé clic en cualquier celda para editarla.</div>
             <table>
               <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Tipo</th><th>Monto</th><th></th></tr></thead>
               <tbody>
-                {gastos.length === 0 && <tr><td colSpan={6} style={{ color: T.inkSoft, textAlign: "center", padding: 24 }}>Todavía no cargaste gastos.</td></tr>}
-                {[...gastos].sort((a, b) => (b.fecha || "").localeCompare(a.fecha || "")).map((g) => (
+                {gastosFiltrados.length === 0 && <tr><td colSpan={6} style={{ color: T.inkSoft, textAlign: "center", padding: 24 }}>Todavía no cargaste gastos.</td></tr>}
+                {gastosFiltrados.map((g) => (
                   <GastoRow key={g.id} g={g} onChange={(campo, valor) => updateGasto(g.id, campo, valor)} onDelete={() => delGasto(g.id)} />
                 ))}
               </tbody>
@@ -1340,18 +1431,26 @@ function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setV
       )}
 
       {subtab === "ingresos" && (
-        <Card style={{ overflow: "auto" }}>
-          <div style={{ fontSize: 11.5, color: T.inkSoft, padding: "10px 14px 0" }}>Todos los ingresos vienen de tus ventas cargadas. Podés corregir el monto, el método de pago o el estado acá mismo.</div>
-          <table>
-            <thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Monto</th><th>Método de pago</th><th>Canal</th><th>Estado</th></tr></thead>
-            <tbody>
-              {ventas.length === 0 && <tr><td colSpan={7} style={{ color: T.inkSoft, textAlign: "center", padding: 24 }}>Todavía no hay ventas cargadas.</td></tr>}
-              {[...ventas].sort((a, b) => (b.fecha || "").localeCompare(a.fecha || "")).map((v) => (
-                <IngresoRow key={v.id} v={v} onChange={(campos) => updateIngreso(v.id, campos)} />
-              ))}
-            </tbody>
-          </table>
-        </Card>
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            <FilterGroup label="Estado" options={ESTADOS_VENTA} value={filtroEstadoIngreso} onChange={setFiltroEstadoIngreso} />
+            <FilterGroup label="Canal" options={canalesIngreso} value={filtroCanalIngreso} onChange={setFiltroCanalIngreso} />
+            <LimpiarFiltros activos={filtroEstadoIngreso.length + filtroCanalIngreso.length > 0} onClear={() => { setFiltroEstadoIngreso([]); setFiltroCanalIngreso([]); }} />
+          </div>
+
+          <Card style={{ overflow: "auto" }}>
+            <div style={{ fontSize: 11.5, color: T.inkSoft, padding: "10px 14px 0" }}>Todos los ingresos vienen de tus ventas cargadas. Podés corregir el monto, el método de pago o el estado acá mismo.</div>
+            <table>
+              <thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Monto</th><th>Método de pago</th><th>Canal</th><th>Estado</th></tr></thead>
+              <tbody>
+                {ingresosFiltrados.length === 0 && <tr><td colSpan={7} style={{ color: T.inkSoft, textAlign: "center", padding: 24 }}>Todavía no hay ventas cargadas.</td></tr>}
+                {ingresosFiltrados.map((v) => (
+                  <IngresoRow key={v.id} v={v} onChange={(campos) => updateIngreso(v.id, campos)} />
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        </>
       )}
     </div>
   );
