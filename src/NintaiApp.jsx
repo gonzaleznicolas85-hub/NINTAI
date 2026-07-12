@@ -72,6 +72,7 @@ const SEED_VENTAS = [
 
 const ESTADOS_VENTA = ["Ingresado", "En preparación", "Completado", "Entregado", "Finalizado"];
 const ESTADOS_COMPLETOS = ["Entregado", "Finalizado"];
+const UMBRAL_STOCK_BAJO = 100; // gramos — por debajo de esto (o en negativo) se considera stock bajo
 
 const SEED_INSUMOS = [
   { id: "i1", tipo: "Filamento", material: "PLA", color: "Negro", acabado: "Matte", marca: "Elegoo", pesoRollo: 1000, costoRollo: 25000, costoPorGramo: 25, stockRestante: 264.8 },
@@ -337,6 +338,8 @@ export default function NintaiApp() {
   const [costosFijos, setCostosFijos] = useState(SEED_COSTOS_FIJOS);
   const [cargando, setCargando] = useState(!!DEFAULT_API_URL);
 
+  const insumosBajoStock = insumos.filter((i) => Number(i.stockRestante) < UMBRAL_STOCK_BAJO);
+
   // Carga inicial desde Google Sheets al montar la app (o al cambiar la URL de API).
   useEffect(() => {
     if (!api.active) return;
@@ -458,6 +461,14 @@ export default function NintaiApp() {
                     border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left", opacity: active ? 1 : 0.82,
                   }}>
                   <Icon size={16} /> {n.label}
+                  {n.id === "config" && insumosBajoStock.length > 0 && (
+                    <span style={{
+                      marginLeft: "auto", background: T.accent, color: T.paper, borderRadius: 999,
+                      fontSize: 10.5, fontWeight: 700, padding: "1px 6px", fontFamily: "'IBM Plex Mono', monospace",
+                    }}>
+                      {insumosBajoStock.length}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -478,7 +489,7 @@ export default function NintaiApp() {
           </div>
         ) : (
           <>
-            {tab === "dashboard" && <Dashboard ventas={ventas} productos={productos} gastos={gastos} isMobile={isMobile} />}
+            {tab === "dashboard" && <Dashboard ventas={ventas} productos={productos} gastos={gastos} insumos={insumos} isMobile={isMobile} />}
             {tab === "ventas" && <Ventas ventas={ventas} setVentas={setVentas} productos={productos} canales={canales} api={api} isMobile={isMobile} />}
             {tab === "productos" && <Productos productos={productos} setProductos={setProductos} costosFijos={costosFijos} api={api} isMobile={isMobile} />}
             {tab === "catalogo" && <Catalogo productos={productos} isMobile={isMobile} />}
@@ -495,10 +506,24 @@ export default function NintaiApp() {
 
 /* ------------------------- Dashboard ------------------------- */
 
-function Dashboard({ ventas, productos, gastos, isMobile }) {
+function Dashboard({ ventas, productos, gastos, insumos, isMobile }) {
   const finalizadas = ventas.filter((v) => ESTADOS_COMPLETOS.includes(v.estado));
   const totalVentas = finalizadas.reduce((a, v) => a + v.total, 0);
   const totalGastos = gastos.reduce((a, g) => a + Number(g.monto || 0), 0);
+
+  const insumosBajoStock = insumos.filter((i) => Number(i.stockRestante) < UMBRAL_STOCK_BAJO);
+
+  const pendientesCobro = ventas
+    .filter((v) => {
+      const finalizada = v.estado === "Finalizado";
+      const pagado = finalizada ? (v.total || 0) : sumPagos(parsePagos(v));
+      return pagado < (v.total || 0);
+    })
+    .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+
+  const pendientesEntrega = ventas
+    .filter((v) => !ESTADOS_COMPLETOS.includes(v.estado))
+    .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
 
   const gananciaPorVenta = (v) => {
     const p = productos.find((p) => p.id === v.productoId);
@@ -544,6 +569,59 @@ function Dashboard({ ventas, productos, gastos, isMobile }) {
         <KPI label="Ganancia neta" value={money(gananciaTotal)} accent={T.accent2} sub="Ventas − costo − gastos" />
         <KPI label="Gastos registrados" value={money(totalGastos)} sub="Ingresos y gastos" />
         <KPI label="Ticket promedio" value={money(ticketProm)} sub="Por pedido finalizado" />
+      </div>
+
+      {insumosBajoStock.length > 0 && (
+        <Card style={{ padding: "14px 18px", marginBottom: 16, border: `1.5px solid ${T.accent}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13, color: T.accent, marginBottom: 6 }}>
+            ⚠ Stock de filamento bajo ({insumosBajoStock.length})
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, fontSize: 12.5, color: T.inkSoft }}>
+            {insumosBajoStock.map((i) => (
+              <span key={i.id}>
+                {i.color} {i.acabado} ({i.marca}): <b style={{ color: T.accent, fontFamily: "'IBM Plex Mono', monospace" }}>{i.stockRestante}g</b>
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <Card style={{ padding: 18 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Pendientes de cobro ({pendientesCobro.length})</div>
+          {pendientesCobro.length === 0 ? (
+            <div style={{ fontSize: 12.5, color: T.inkSoft }}>No hay saldos pendientes. 🎉</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflow: "auto" }}>
+              {pendientesCobro.map((v) => {
+                const pagado = sumPagos(parsePagos(v));
+                const saldo = (v.total || 0) - pagado;
+                return (
+                  <div key={v.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, borderBottom: `1px solid ${T.line}`, paddingBottom: 6 }}>
+                    <span>{v.cliente} <span style={{ color: T.inkSoft }}>— {v.productoNombre}</span></span>
+                    <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.accent }}>{money(saldo)}</b>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+
+        <Card style={{ padding: 18 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Pendientes de entrega ({pendientesEntrega.length})</div>
+          {pendientesEntrega.length === 0 ? (
+            <div style={{ fontSize: 12.5, color: T.inkSoft }}>No hay pedidos pendientes de entrega. 🎉</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflow: "auto" }}>
+              {pendientesEntrega.map((v) => (
+                <div key={v.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5, borderBottom: `1px solid ${T.line}`, paddingBottom: 6 }}>
+                  <span>{v.cliente} <span style={{ color: T.inkSoft }}>— {v.productoNombre}</span></span>
+                  <Hanko estado={v.estado} />
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.4fr 1fr", gap: 16, marginBottom: 16 }}>
