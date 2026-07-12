@@ -302,10 +302,11 @@ export default function NintaiApp() {
   useEffect(() => {
     if (!api.active) return;
     let cancelado = false;
+    const normFecha = (s) => (typeof s === "string" && s.length > 10 ? s.slice(0, 10) : s);
     async function cargar() {
       setCargando(true);
       try {
-        const [v, p, ins, g, r, pr, f, c] = await Promise.all([
+        const [v, p, ins, g, r, pr, f, c, cf] = await Promise.all([
           api.list("Ventas"),
           api.list("Productos"),
           api.list("Insumos"),
@@ -314,16 +315,25 @@ export default function NintaiApp() {
           api.list("Presupuestos"),
           api.list("Facturas"),
           api.list("CanalesPrecios"),
+          api.list("CostosFijos"),
         ]);
         if (cancelado) return;
-        if (Array.isArray(v) && v.length) setVentas(v);
+        if (Array.isArray(v) && v.length)
+          setVentas(v.map((x) => ({ ...x, fecha: normFecha(x.fecha) })));
         if (Array.isArray(p) && p.length) setProductos(p);
         if (Array.isArray(ins) && ins.length) setInsumos(ins);
-        if (Array.isArray(g) && g.length) setGastos(g);
-        if (Array.isArray(r) && r.length) setRecurrentes(r);
+        if (Array.isArray(g) && g.length)
+          setGastos(g.map((x) => ({ ...x, fecha: normFecha(x.fecha) })));
+        if (Array.isArray(r) && r.length)
+          setRecurrentes(r.map((x) => ({ ...x, proximoPago: normFecha(x.proximoPago) })));
         if (Array.isArray(pr) && pr.length) setPresupuestos(pr);
         if (Array.isArray(f) && f.length) setFacturas(f);
         if (Array.isArray(c) && c.length) setCanales(c);
+        if (Array.isArray(cf) && cf.length) {
+          const map = {};
+          cf.forEach((row) => { if (row.id && row.valor != null) map[row.id.replace("cf-", "")] = Number(row.valor); });
+          if (Object.keys(map).length) setCostosFijos((prev) => ({ ...prev, ...map }));
+        }
       } catch (err) {
         console.error("Error cargando datos desde Google Sheets:", err);
       } finally {
@@ -460,9 +470,9 @@ function Dashboard({ ventas, productos, gastos, isMobile }) {
     const map = {};
     finalizadas.forEach((v) => {
       const key = v.productoNombre || "Otro";
-      map[key] = (map[key] || 0) + v.total;
+      map[key] = (map[key] || 0) + Number(v.cantidad || 1);
     });
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([nombre, total]) => ({ nombre, total }));
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([nombre, unidades]) => ({ nombre, unidades }));
   }, [finalizadas]);
 
   const porCanal = useMemo(() => {
@@ -513,14 +523,14 @@ function Dashboard({ ventas, productos, gastos, isMobile }) {
       </div>
 
       <Card style={{ padding: 18 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Productos más vendidos ($)</div>
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Productos más vendidos (unidades)</div>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={porProducto}>
             <CartesianGrid stroke={T.line} vertical={false} />
             <XAxis dataKey="nombre" tick={{ fontSize: 11, fill: T.inkSoft }} axisLine={{ stroke: T.line }} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: T.inkSoft }} axisLine={false} tickLine={false} width={70} tickFormatter={(v) => money(v)} />
-            <Tooltip formatter={(v) => money(v)} contentStyle={{ fontSize: 12, borderRadius: 8, border: `1px solid ${T.line}` }} />
-            <Bar dataKey="total" fill={T.accent2} radius={[4, 4, 0, 0]} />
+            <YAxis tick={{ fontSize: 11, fill: T.inkSoft }} axisLine={false} tickLine={false} width={40} allowDecimals={false} />
+            <Tooltip formatter={(v) => `${v} u.`} contentStyle={{ fontSize: 12, borderRadius: 8, border: `1px solid ${T.line}` }} />
+            <Bar dataKey="unidades" fill={T.accent2} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </Card>
@@ -543,7 +553,9 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
   const [form, setForm] = useState({ ...BLANK_VENTA_FORM, canal: canales[0]?.canal || "" });
   const [q, setQ] = useState("");
 
-  const filtered = ventas.filter((v) => (v.cliente + v.productoNombre).toLowerCase().includes(q.toLowerCase()));
+  const filtered = ventas
+    .filter((v) => (v.cliente + v.productoNombre).toLowerCase().includes(q.toLowerCase()))
+    .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
   const productoSel = productos.find((p) => p.id === form.productoId);
   const esLampara = productoSel?.categoria === "Lámpara";
   const esAMedida = form.productoId === "";
@@ -1020,6 +1032,27 @@ function editableCellProps(style = {}) {
   };
 }
 
+// Muestra el monto formateado como moneda; al hacer foco se convierte en input numérico editable.
+function MontoCell({ value, onChange }) {
+  const [editing, setEditing] = useState(false);
+  return editing ? (
+    <input
+      type="number"
+      defaultValue={value}
+      autoFocus
+      onBlur={(e) => { onChange(Number(e.target.value)); setEditing(false); }}
+      {...editableCellProps({ width: 120 })}
+    />
+  ) : (
+    <span
+      onClick={() => setEditing(true)}
+      style={{ fontFamily: "'IBM Plex Mono', monospace", cursor: "text", display: "inline-block", minWidth: 80 }}
+    >
+      {money(value)}
+    </span>
+  );
+}
+
 function GastoRow({ g, onChange, onDelete }) {
   const cell = (campo, type = "text") => (
     <input type={type} value={g[campo]} onChange={(e) => onChange(campo, e.target.value)} {...editableCellProps({ width: type === "number" ? 100 : "100%" })} />
@@ -1030,7 +1063,7 @@ function GastoRow({ g, onChange, onDelete }) {
       <td>{cell("categoria")}</td>
       <td>{cell("descripcion")}</td>
       <td>{cell("tipo")}</td>
-      <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{cell("monto", "number")}</td>
+      <td><MontoCell value={g.monto} onChange={(v) => onChange("monto", v)} /></td>
       <td><button onClick={onDelete} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
     </tr>
   );
@@ -1045,7 +1078,7 @@ function RecurrenteRow({ r, onChange, onDelete }) {
       <td style={{ fontWeight: 600 }}>{cell("concepto")}</td>
       <td>{cell("frecuencia")}</td>
       <td>{cell("proximoPago", "date")}</td>
-      <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{cell("monto", "number")}</td>
+      <td><MontoCell value={r.monto} onChange={(v) => onChange("monto", v)} /></td>
       <td><button onClick={onDelete} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft }}><Trash2 size={14} /></button></td>
     </tr>
   );
@@ -1057,9 +1090,7 @@ function IngresoRow({ v, onChange }) {
       <td>{fmtDate(v.fecha)}</td>
       <td style={{ fontWeight: 600 }}>{v.cliente}</td>
       <td>{v.productoNombre}</td>
-      <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
-        <input type="number" value={v.total} onChange={(e) => onChange({ total: Number(e.target.value) })} {...editableCellProps({ width: 100 })} />
-      </td>
+      <td><MontoCell value={v.total} onChange={(val) => onChange({ total: val })} /></td>
       <td>
         <select value={v.metodoPago} onChange={(e) => onChange({ metodoPago: e.target.value })} {...editableCellProps({ width: 130 })}>
           <option>Transferencia</option><option>Efectivo</option><option>Mercado Pago</option>
@@ -1159,7 +1190,7 @@ function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setV
               <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Tipo</th><th>Monto</th><th></th></tr></thead>
               <tbody>
                 {gastos.length === 0 && <tr><td colSpan={6} style={{ color: T.inkSoft, textAlign: "center", padding: 24 }}>Todavía no cargaste gastos.</td></tr>}
-                {gastos.map((g) => (
+                {[...gastos].sort((a, b) => (b.fecha || "").localeCompare(a.fecha || "")).map((g) => (
                   <GastoRow key={g.id} g={g} onChange={(campo, valor) => updateGasto(g.id, campo, valor)} onDelete={() => delGasto(g.id)} />
                 ))}
               </tbody>
@@ -1199,7 +1230,7 @@ function Finanzas({ gastos, setGastos, recurrentes, setRecurrentes, ventas, setV
             <thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Monto</th><th>Método de pago</th><th>Canal</th><th>Estado</th></tr></thead>
             <tbody>
               {ventas.length === 0 && <tr><td colSpan={7} style={{ color: T.inkSoft, textAlign: "center", padding: 24 }}>Todavía no hay ventas cargadas.</td></tr>}
-              {ventas.map((v) => (
+              {[...ventas].sort((a, b) => (b.fecha || "").localeCompare(a.fecha || "")).map((v) => (
                 <IngresoRow key={v.id} v={v} onChange={(campos) => updateIngreso(v.id, campos)} />
               ))}
             </tbody>
