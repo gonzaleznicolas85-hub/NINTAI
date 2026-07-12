@@ -541,7 +541,7 @@ function Dashboard({ ventas, productos, gastos, isMobile }) {
 /* ------------------------- Ventas ------------------------- */
 
 const BLANK_VENTA_FORM = {
-  fecha: new Date().toISOString().slice(0, 10), cliente: "", productoId: "", cantidad: 1,
+  fecha: new Date().toISOString().slice(0, 10), cliente: "", productoId: "", cantidad: 1, precioUnitario: "",
   canal: "", metodoPago: "Transferencia", estado: "Ingresado",
   color: "", colorTulipa: "", colorBase: "", descripcionMedida: "", notas: "",
   comprobanteNombre: "", comprobanteUrl: "",
@@ -669,7 +669,9 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
 
   async function guardar() {
     const producto = productos.find((p) => p.id === form.productoId);
-    const precioUnitario = producto?.precioVenta || form.precioUnitario || 0;
+    // El precio unitario cargado a mano en el formulario tiene prioridad sobre el precio de catálogo
+    // (por ejemplo, si se vendió con descuento o a un valor distinto al de lista).
+    const precioUnitario = form.precioUnitario !== "" ? Number(form.precioUnitario) : (producto?.precioVenta || 0);
     const cantidad = Number(form.cantidad);
     const base = {
       ...form, cantidad,
@@ -723,7 +725,14 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
             <Field label="Fecha"><input type="date" style={inputStyle} value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} /></Field>
             <Field label="Cliente"><input style={inputStyle} value={form.cliente} onChange={(e) => setForm({ ...form, cliente: e.target.value })} placeholder="Nombre del cliente" /></Field>
             <Field label="Producto">
-              <select style={inputStyle} value={form.productoId} onChange={(e) => setForm({ ...form, productoId: e.target.value })}>
+              <select
+                style={inputStyle}
+                value={form.productoId}
+                onChange={(e) => {
+                  const nuevoProducto = productos.find((p) => p.id === e.target.value);
+                  setForm({ ...form, productoId: e.target.value, precioUnitario: nuevoProducto?.precioVenta ?? "" });
+                }}
+              >
                 <option value="">A medida / otro</option>
                 {productos.map((p) => <option key={p.id} value={p.id}>{p.categoria} {p.nombre} {p.variante} — {money(p.precioVenta)}</option>)}
               </select>
@@ -743,6 +752,12 @@ function Ventas({ ventas, setVentas, productos, canales, api, isMobile }) {
             )}
 
             <Field label="Cantidad"><input type="number" min={1} style={inputStyle} value={form.cantidad} onChange={(e) => setForm({ ...form, cantidad: e.target.value })} /></Field>
+            <Field label="Precio unitario">
+              <input type="number" style={inputStyle} value={form.precioUnitario} onChange={(e) => setForm({ ...form, precioUnitario: e.target.value })} placeholder="Ej: 30000" />
+              {productoSel && Number(form.precioUnitario) !== productoSel.precioVenta && (
+                <span style={{ fontSize: 11, color: T.inkSoft }}>Precio de catálogo: {money(productoSel.precioVenta)}</span>
+              )}
+            </Field>
             <Field label="Canal">
               <select style={inputStyle} value={form.canal} onChange={(e) => setForm({ ...form, canal: e.target.value })}>
                 {canales.map((c) => <option key={c.id}>{c.canal}</option>)}
